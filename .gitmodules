@@ -10,6 +10,3 @@
 [submodule "externals/mortis"]
 	path = externals/mortis
 	url = git@github.com:ZenToad/mortis.git
-[submodule "externals/rxilog"]
-	path = externals/rxilog
-	url = https://github.com/ZenToad/log.c

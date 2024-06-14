@@ -1,20 +1,19 @@
 #include "raylib.h"
-#include <stdio.h>
 
 void sandbox1(void) {
+
     // Initialize the window and print the available monitors
     int monitorCount = GetMonitorCount();
-    printf("Available monitors: %d\n", monitorCount);
 
     for (int i = 0; i < monitorCount; i++) {
-        printf("Monitor %d: %s (%d x %d)\n", i, GetMonitorName(i), GetMonitorWidth(i), GetMonitorHeight(i));
+        TraceLog(LOG_INFO, "Monitor %d: %s (%d x %d)\n", i, GetMonitorName(i), GetMonitorWidth(i), GetMonitorHeight(i));
     }
 
     // Assuming you want to use the primary monitor (index 0)
     int monitorIndex = 0;
 
     if (monitorIndex < 0 || monitorIndex >= monitorCount) {
-        printf("Invalid monitor index. Using primary monitor instead.\n");
+        TraceLog(LOG_ERROR, "Invalid monitor index. Using primary monitor instead.\n");
         monitorIndex = 0;
     }
 
@@ -42,8 +41,7 @@ void sandbox1(void) {
 }
 
 void sandbox2(void) {
-    int monitor = GetCurrentMonitor();
-
+    TraceLog(LOG_INFO, "assballs!!!");
 }
 
 int main(void) {

@@ -11,8 +11,8 @@ void draw_console() {
     DrawText("Console", 10, 10, 20, WHITE);
 
     // Draw the console text box
-    Rectangle bounds = { 10, 30, 780, 60 };
-    GuiTextBox(bounds, consoleText, 256, true);
+    // Rectangle bounds = { 10, 30, 780, 60 };
+    // GuiTextBox(bounds, consoleText, 256, true);
 }
 
 int main(void) {  
@@ -20,10 +20,16 @@ int main(void) {
     const int screenWidth = 800;
     const int screenHeight = 450;
 
+
     InitWindow(screenWidth, screenHeight, "Hello, World!");
     GuiLoadStyleTerminal();
     SetTargetFPS(60);
 
+
+    const int displayWidth = GetMonitorWidth(0);
+    const int displayHeight = GetMonitorHeight(0);
+    float scaleFactor = screenWidth / displayWidth;
+    
     // Main game loop
     while (!WindowShouldClose()) {
         // Update

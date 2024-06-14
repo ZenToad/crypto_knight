@@ -7,3 +7,6 @@
 [submodule "externals/stb"]
 	path = externals/stb
 	url = https://github.com/nothings/stb.git
+[submodule "externals/mortis"]
+	path = externals/mortis
+	url = git@github.com:ZenToad/mortis.git

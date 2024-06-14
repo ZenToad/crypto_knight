@@ -4,3 +4,5 @@ externals/raylib/build/raylib/include
 externals/raygui/src
 -I
 externals/raygui/styles/terminal
+-I
+externals/stb

@@ -3,7 +3,7 @@ setlocal enableextensions enabledelayedexpansion
 set RAYLIB_LIB=..\externals\raylib\build\raylib\Debug
 set target_src_dir=..\src
 set target=main
-set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles
+set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb
 set target_src=
 @REM set target_lib=gdi32.lib raylib.lib winmm.lib /libpath:..\raylib\build\raylib\Debug
 set target_lib=/libpath:%RAYLIB_LIB% raylib.lib winmm.lib gdi32.lib opengl32.lib user32.lib kernel32.lib shell32.lib /NODEFAULTLIB:libcmt

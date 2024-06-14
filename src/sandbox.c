@@ -41,7 +41,6 @@ void sandbox1(void) {
 }
 
 void sandbox2(void) {
-    TraceLog(LOG_INFO, "assballs!!!");
 }
 
 int main(void) {

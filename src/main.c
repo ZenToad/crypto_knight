@@ -2,7 +2,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include <raygui.h> // Include the raygui library
 #include <style_terminal.h> // Include the terminal style
-
+ 
 char consoleText[256] = "Hello,\nWorld!"; // Define a global variable for the console text
 
 void draw_console() {

@@ -1,0 +1,9 @@
+[submodule "externals/raylib"]
+	path = externals/raylib
+	url = https://github.com/raysan5/raylib
+[submodule "externals/raygui"]
+	path = externals/raygui
+	url = https://github.com/raysan5/raygui
+[submodule "externals/stb"]
+	path = externals/stb
+	url = https://github.com/nothings/stb.git

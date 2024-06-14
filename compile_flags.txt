@@ -1,6 +1,6 @@
 -I
-external/raylib/build/raylib/include
+externals/raylib/build/raylib/include
 -I
-external/raygui/src
+externals/raygui/src
 -I
-external/raygui/styles/terminal
+externals/raygui/styles/terminal

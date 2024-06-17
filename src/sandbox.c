@@ -94,7 +94,7 @@ int main(void) {
     const int screenWidth = 1024;
     const int screenHeight = 768;
 
-    InitWindow(screenWidth, screenHeight, "Console");
+    InitWindow(screenWidth, screenHeight, "sandbox");
     GuiLoadStyleTerminal();
     SetTargetFPS(60);
 

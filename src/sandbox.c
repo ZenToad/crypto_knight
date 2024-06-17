@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <raylib.h>
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h> // Include the raygui library
+#include <style_terminal.h> // Include the terminal style
 #include "stb_textedit.h"
 
 typedef struct ass_t {
@@ -68,8 +72,64 @@ int textedit_insertchars(ass_t *str, int i, STB_TEXTEDIT_POSITIONTYPE *c, int le
 
 #define STB_TEXTEDIT_IMPLEMENTATION
 #include "stb_textedit.h"
+
+char text[256] = {0};
+
+void draw_console(void) {
+
+    // first just a widget that display some of the
+    // stuff.
+
+   DrawText(text, 64, 64, 16, GREEN); 
+}
  
-int main() {
+int main(void) {  
+    text[0] = 'H';
+    text[1] = '3';
+    text[2] = 'L';
+    text[3] = 'L';
+    text[4] = '0';
+    text[5] = '!';
+    // Initialization
+    const int screenWidth = 1024;
+    const int screenHeight = 768;
+
+    InitWindow(screenWidth, screenHeight, "Console");
+    GuiLoadStyleTerminal();
+    SetTargetFPS(60);
+
+    char textBoxText[64] = "ASDF";
+
+    bool forceSquaredChecked = false;
+    bool textBoxEditMode = false;
+    bool showTextInputBox = true;
+    // Main game loop
+    while (!WindowShouldClose()) {
+        // Update
+        
+        // Draw
+        BeginDrawing();
+
+        ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+        GuiCheckBox( (Rectangle){ 25, 108, 15, 15 }, "FORCE CHECK!", &forceSquaredChecked);
+        GuiSetStyle(TEXTBOX, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+        if (GuiTextBox( (Rectangle){ 25, 215, 125, 30 }, textBoxText, 64, textBoxEditMode)) {
+            textBoxEditMode = !textBoxEditMode;
+        }
+
+        GuiSetStyle(BUTTON, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+        if (GuiButton((Rectangle){ 25, 255, 125, 30 }, GuiIconText(ICON_FILE_SAVE, "Save File"))) {
+            showTextInputBox = true;
+        }
+        draw_console();
+        // DrawText("Hello, World!", 10, 10, 20, RAYWHITE);
+
+        EndDrawing();
+    }
+
+    // De-Initialization
+    CloseWindow();
+
     return 0;
 }
 

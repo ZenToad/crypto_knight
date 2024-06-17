@@ -3,9 +3,9 @@
 #include <raygui.h> // Include the raygui library
 #include <style_terminal.h> // Include the terminal style
                             //
-#define STB_TEXTEDIT_CHARTYPE char
-#define STB_TEXTEDIT_IMPLEMENTATION
-#include <stb_textedit.h> // Include the stb text editing library
+// #define STB_TEXTEDIT_CHARTYPE char
+// #define STB_TEXTEDIT_IMPLEMENTATION
+// #include <stb_textedit.h> // Include the stb text editing library
 
 char consoleText[256] = "Hello,\nWorld!"; // Define a global variable for the console text
  

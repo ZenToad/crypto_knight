@@ -2,6 +2,10 @@
 .idea/
 .vscode/
 .venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Ignore compiled binaries
 *.exe

@@ -6,3 +6,5 @@ externals/raygui/src
 externals/raygui/styles/terminal
 -I
 externals/stb
+-I
+include

@@ -1,6 +1,7 @@
 // Test for ck_string_intern function
 #include "ck_string.h"
 #include <assert.h>
+#include <string.h>
 
 void test_ck_string_intern() {
     const char* str1 = "Hello";

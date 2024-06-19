@@ -7,7 +7,6 @@
 [submodule "externals/raylib-game"]
     path = externals/raylib-game
     url = https://github.com/ZenToad/raylib-game-template.git
-
 [submodule "externals/raylib"]
 	path = externals/raylib
 	url = https://github.com/ZenToad/raylib.git

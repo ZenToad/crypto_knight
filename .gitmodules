@@ -10,3 +10,6 @@
 [submodule "externals/raylib"]
 	path = externals/raylib
 	url = https://github.com/ZenToad/raylib.git
+[submodule "externals/raygui"]
+	path = externals/raygui
+	url = https://github.com/raysan5/raygui.git

@@ -1,6 +1,3 @@
-[submodule "externals/raygui"]
-	path = externals/raygui
-	url = https://github.com/raysan5/raygui
 [submodule "externals/stb"]
 	path = externals/stb
 	url = https://github.com/nothings/stb.git
@@ -10,3 +7,6 @@
 [submodule "externals\\raylib"]
 	path = externals\\raylib
 	url = https://github.com/ZenToad/raylib.git
+[submodule "externals\\raylib-game"]
+	path = externals\\raylib-game
+	url = https://github.com/ZenToad/raylib-game-template.git

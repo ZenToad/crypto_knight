@@ -8,3 +8,5 @@ externals/raygui/styles/terminal
 externals/stb
 -I
 include
+-I
+prototypes/proto1

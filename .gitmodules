@@ -4,9 +4,6 @@
 [submodule "externals/mortis"]
     path = externals/mortis
     url = git@github.com:ZenToad/mortis.git
-[submodule "externals/raylib"]
-    path = externals/raylib
-    url = https://github.com/ZenToad/raylib.git
 [submodule "externals/raylib-game"]
     path = externals/raylib-game
     url = https://github.com/ZenToad/raylib-game-template.git

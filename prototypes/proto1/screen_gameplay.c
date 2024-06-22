@@ -28,11 +28,14 @@
 #include <math.h>
 #include <stdbool.h>
 
+enum state { ROOM = 1, TERMINAL = 2 };
+
 //----------------------------------------------------------------------------------
 // Module Variables Definition (local)
 //----------------------------------------------------------------------------------
 static int framesCounter = 0;
 static int finishScreen = 0;
+static int state = ROOM;
 
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
@@ -69,10 +72,6 @@ void draw_computer(void) {
     }
 }
 
-void draw_terminal_view(void) {
-
-}
-
 // Gameplay Screen Initialization logic
 void InitGameplayScreen(void)
 {
@@ -95,9 +94,8 @@ bool is_man_near_comp(void) {
     return true;
 }
 
-// Gameplay Screen Update logic
-void UpdateGameplayScreen(void)
-{
+void update_room(void) {
+
     // TODO: Update GAMEPLAY screen variables here!
     comp.can_use = is_man_near_comp() ? 1 : 0;
 
@@ -119,18 +117,32 @@ void UpdateGameplayScreen(void)
     if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
         man.ypos += man.dy;
     }
-    if (IsKeyDown(KEY_E)) {
+    if (IsKeyPressed(KEY_E)) {
         // check if we are near the computer
         if (is_man_near_comp()) {
             man.use_comp = 1;
+            state = TERMINAL;
             TraceLog(LOG_INFO, "Using computer");
         }
     }
 }
 
-// Gameplay Screen Draw logic
-void DrawGameplayScreen(void)
-{
+void update_computer(void) {
+    if (IsKeyPressed(KEY_Q)) {
+        state = ROOM;
+    }
+}
+
+// Gameplay Screen Update logic
+void UpdateGameplayScreen(void) {
+    if (state == ROOM) {
+        update_room();
+    } else if (state == TERMINAL) {
+        update_computer();
+    }
+}
+
+void draw_room(void) {
     // TODO: Draw GAMEPLAY screen here!
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), PURPLE);
     Vector2 pos = { 20, 10 };
@@ -138,6 +150,20 @@ void DrawGameplayScreen(void)
     // DrawText("PRESS ENTER or TAP to JUMP to ENDING SCREEN", 130, 220, 20, MAROON);
     draw_computer();
     draw_little_man();
+}
+
+void draw_terminal(void) {
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+}
+
+// Gameplay Screen Draw logic
+void DrawGameplayScreen(void)
+{
+    if (state == ROOM) {
+        draw_room();
+    } else if (state == TERMINAL) {
+        draw_terminal();
+    } 
 }
 
 // Gameplay Screen Unload logic

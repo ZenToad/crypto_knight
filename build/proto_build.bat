@@ -1,11 +1,10 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
 set RAYLIB_LIB=..\externals\raylib\build\raylib\Debug
-set target_src_dir=..\prototypes\proto1
-set target=raylib_game
+set target_src_dir=..\prototypes\proto2
+set target=pong
 set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb -I..\prototypes\proto1
-set target_src=!target_src_dir!\raylib_game.c !target_src_dir!\screen_ending.c !target_src_dir!\screen_gameplay.c !target_src_dir!\screen_logo.c !target_src_dir!\screen_options.c !target_src_dir!\screen_title.c
-@REM set target_lib=gdi32.lib raylib.lib winmm.lib /libpath:..\raylib\build\raylib\Debug
+set target_src=
 set target_lib=/libpath:%RAYLIB_LIB% raylib.lib winmm.lib gdi32.lib opengl32.lib user32.lib kernel32.lib shell32.lib /NODEFAULTLIB:libcmt
 set target_flags=
 set compiler=cl

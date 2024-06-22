@@ -84,6 +84,13 @@ void drawCountdown(int countdown, int screenWidth, int screenHeight) {
     DrawText("GET READY!!!", screenWidth/2 - textWidth/2, 20, 20, WHITE);
 }
 
+void resetPlayingField(int screenWidth, int screenHeight) {
+    playerLeft.position = (Vector2){20, screenHeight / 2};
+    playerRight.position = (Vector2){screenWidth - 20, screenHeight / 2};
+    ball.position = (Vector2){screenWidth / 2, screenHeight / 2};
+    ball.speed = (Vector2){5, 5};
+}
+
 void resetGameState(int screenWidth, int screenHeight) {
 
     game.state = GAME_GET_READY;
@@ -141,26 +148,41 @@ int main(void) {
         // Update
         //----------------------------------------------------------------------------------
         // Move paddles
-        if (game.state == GAME_PLAYING) {
+        if (game.state == GAME_PLAYING || game.state == GAME_GET_READY) {
 
             if (IsKeyDown(KEY_W)) {
                 playerLeft.position.y -= 5;
+                if (playerLeft.position.y <= 0) {
+                    playerLeft.position.y = 0;
+                }
             }
             if  (IsKeyDown(KEY_S)) {
                 playerLeft.position.y += 5;
+                if (playerLeft.position.y >= screenHeight - playerLeft.size.y) {
+                    playerLeft.position.y = screenHeight - playerLeft.size.y;
+                }
             }
             if (IsKeyDown(KEY_UP)) {
                 playerRight.position.y -= 5;
+                if (playerRight.position.y <= 0) {
+                    playerRight.position.y = 0;
+                }
             }
             if  (IsKeyDown(KEY_DOWN)) {
                 playerRight.position.y += 5;
+                if (playerRight.position.y >= screenHeight - playerRight.size.y) {
+                    playerRight.position.y = screenHeight - playerRight.size.y;
+                }
             }
 
         } else if (game.state == GAME_OVER || game.state == GAME_ATTRACT) {
+
             if (IsKeyPressed(KEY_ENTER)) {
                 resetGameState(screenWidth, screenHeight);
             }
+
         } if (game.state == GAME_PLAYING) {
+
             // Move ball
             ball.position.x += ball.speed.x;
             ball.position.y += ball.speed.y;
@@ -170,15 +192,13 @@ int main(void) {
 
             if (checkOutOfBoundsLeft(&ball, screenWidth)) {
                 playerRight.score++;
-                ball.position = (Vector2){screenWidth / 2, screenHeight / 2};
-                ball.speed = (Vector2){5, 5};
+                resetPlayingField(screenWidth, screenHeight);
                 game.state = GAME_GET_READY;
                 game.countdown = 3;
                 game.elapsedTime = 0.0f;
             } else if (checkOutOfBoundsRight(&ball, screenWidth)) {
                 playerLeft.score++;
-                ball.position = (Vector2){screenWidth / 2, screenHeight / 2};
-                ball.speed = (Vector2){5, 5};
+                resetPlayingField(screenWidth, screenHeight);
                 game.state = GAME_GET_READY;
                 game.countdown = 3;
                 game.elapsedTime = 0.0f;

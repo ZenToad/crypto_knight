@@ -7,11 +7,20 @@ enum GameState {
     GAME_OVER, 
 };
 
+enum SoundType {
+    COLLISION,
+    COUNTDOWN,
+    GAME_START,
+    OUT_OF_BOUNDS,
+    MAX_SOUNDS,
+};
+
 typedef struct game_t {
     enum GameState state;
     int score;
     int countdown;
     float elapsedTime;
+    Sound sounds[MAX_SOUNDS];
 } game_t;
 game_t game;
 
@@ -51,12 +60,14 @@ bool checkOutOfBoundsRight(ball_t *ball, int screenWidth) {
 void handleTopBotCollision(ball_t *ball, int screenWidth, int screenHeight) {
     if ((ball->position.y >= screenHeight - ball->radius) || (ball->position.y <= ball->radius)) {
         ball->speed.y *= -1;
+        PlaySound(game.sounds[COLLISION]);
     }
 }
 
 void handleCollisionBallPlayer(ball_t *ball, player_t *player) {
     if (CheckCollisionCircleRec(ball->position, ball->radius, (Rectangle){player->position.x, player->position.y, player->size.x, player->size.y})) {
         ball->speed.x *= -1;
+        PlaySound(game.sounds[COLLISION]);
     }
 }
 
@@ -105,10 +116,14 @@ void resetGameState(int screenWidth, int screenHeight) {
     playerRight.score = 0;
 
     ball.position = (Vector2){screenWidth / 2, screenHeight / 2};
+
+    PlaySound(game.sounds[COUNTDOWN]);
 }
 
 void initGameState(int screenWidth, int screenHeight) {
+
     game.state = GAME_ATTRACT;
+
     game.countdown = 3;
     game.elapsedTime = 0.0f;
 
@@ -137,6 +152,15 @@ int main(void) {
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
                                     
+    InitAudioDevice();
+
+    //--------------------------------------------------------------------------------------
+    // Load game assets
+    game.sounds[COLLISION] = LoadSound("../prototypes/proto2/collision.wav");
+    game.sounds[COUNTDOWN] = LoadSound("../prototypes/proto2/countdown.wav");
+    game.sounds[GAME_START] = LoadSound("../prototypes/proto2/game_start.wav");
+    game.sounds[OUT_OF_BOUNDS] = LoadSound("../prototypes/proto2/out_of_bounds.wav");
+
     //--------------------------------------------------------------------------------------
     // Initialize game variables
     initGameState(screenWidth, screenHeight);
@@ -196,12 +220,14 @@ int main(void) {
                 game.state = GAME_GET_READY;
                 game.countdown = 3;
                 game.elapsedTime = 0.0f;
+                PlaySound(game.sounds[OUT_OF_BOUNDS]);
             } else if (checkOutOfBoundsRight(&ball, screenWidth)) {
                 playerLeft.score++;
                 resetPlayingField(screenWidth, screenHeight);
                 game.state = GAME_GET_READY;
                 game.countdown = 3;
                 game.elapsedTime = 0.0f;
+                PlaySound(game.sounds[OUT_OF_BOUNDS]);
             }
 
             handleTopBotCollision(&ball, screenWidth, screenHeight);
@@ -218,12 +244,15 @@ int main(void) {
         } else if (game.state == GAME_GET_READY) {
             // update timer
             game.elapsedTime += GetFrameTime();
-            if (game.elapsedTime >= 1.0f) {
-                game.countdown--;
-                game.elapsedTime = 0.0f;
-            }
             if (game.countdown == 0) {
                 game.state = GAME_PLAYING;
+                PlaySound(game.sounds[GAME_START]);
+            } else if (game.elapsedTime >= 1.0f) {
+                game.countdown--;
+                game.elapsedTime = 0.0f;
+                if (game.countdown > 0) {
+                    PlaySound(game.sounds[COUNTDOWN]);
+                }
             }
         }
 
@@ -235,7 +264,8 @@ int main(void) {
         ClearBackground(BLACK);
         if (game.state == GAME_ATTRACT) {
 
-            DrawText("Press Enter to start", screenWidth/2 - 100, screenHeight/2, 20, WHITE);
+            int w = MeasureText("Press Enter to start", 20);
+            DrawText("Press Enter to start", screenWidth/2 - w/2, screenHeight/2 - 20/2, 20, WHITE);
 
         } else if (game.state == GAME_GET_READY) {
 
@@ -247,8 +277,10 @@ int main(void) {
 
         } else if (game.state == GAME_OVER) {
 
-            DrawText("Game Over", screenWidth/2 - 100, screenHeight/2, 20, WHITE);
-            DrawText("Press Enter to restart", screenWidth/2 - 100, screenHeight/2 + 20, 20, WHITE);
+            int w = MeasureText("Game Over", 20);
+            DrawText("Game Over", screenWidth/2 - w/2, screenHeight/2 - 20, 20, WHITE);
+            w = MeasureText("Press Enter to restart", 20);
+            DrawText("Press Enter to restart", screenWidth/2 - w/2, screenHeight/2 + 20, 20, WHITE);
 
         } else if (game.state == GAME_PLAYING) {
 
@@ -261,9 +293,6 @@ int main(void) {
 
         EndDrawing();
 
-        // printPlayer(playerLeft);
-        // printPlayer(playerRight);
-        // printBall(ball);
     }
 
     return 0;

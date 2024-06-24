@@ -1,8 +1,8 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
 set RAYLIB_LIB=..\externals\raylib\build\raylib\Debug
-set target_src_dir=..\prototypes\proto2
-set target=pong
+set target_src_dir=..\prototypes\proto3
+set target=snake
 set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb -I..\prototypes\proto1
 set target_src=
 set target_lib=/libpath:%RAYLIB_LIB% raylib.lib winmm.lib gdi32.lib opengl32.lib user32.lib kernel32.lib shell32.lib /NODEFAULTLIB:libcmt

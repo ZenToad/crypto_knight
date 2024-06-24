@@ -3,6 +3,7 @@
 enum GameState {
     GAME_ATTRACT,
     GAME_GET_READY,
+    GAME_COUNTDOWN,
     GAME_PLAYING,
     GAME_OVER, 
 };
@@ -117,7 +118,6 @@ void resetGameState(int screenWidth, int screenHeight) {
 
     ball.position = (Vector2){screenWidth / 2, screenHeight / 2};
 
-    PlaySound(game.sounds[COUNTDOWN]);
 }
 
 void initGameState(int screenWidth, int screenHeight) {
@@ -169,10 +169,9 @@ int main(void) {
     // Main game loop
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
 
-        // Update
+        // Process Input
         //----------------------------------------------------------------------------------
-        // Move paddles
-        if (game.state == GAME_PLAYING || game.state == GAME_GET_READY) {
+        if (game.state == GAME_PLAYING || game.state == GAME_COUNTDOWN || game.state == GAME_GET_READY) {
 
             if (IsKeyDown(KEY_W)) {
                 playerLeft.position.y -= 5;
@@ -205,7 +204,12 @@ int main(void) {
                 resetGameState(screenWidth, screenHeight);
             }
 
-        } if (game.state == GAME_PLAYING) {
+        } 
+
+        // Update game objects
+        //----------------------------------------------------------------------------------
+
+        if (game.state == GAME_PLAYING) {
 
             // Move ball
             ball.position.x += ball.speed.x;
@@ -242,15 +246,33 @@ int main(void) {
             }
 
         } else if (game.state == GAME_GET_READY) {
+
+            game.elapsedTime += GetFrameTime();
+
+            if (game.elapsedTime > 0.75f) {
+                game.state = GAME_COUNTDOWN;
+                game.elapsedTime = 0.0f;
+                PlaySound(game.sounds[COUNTDOWN]);
+            }
+
+        } else if (game.state == GAME_COUNTDOWN) {
+
             // update timer
             game.elapsedTime += GetFrameTime();
+
             if (game.countdown == 0) {
+
                 game.state = GAME_PLAYING;
+
                 PlaySound(game.sounds[GAME_START]);
+
             } else if (game.elapsedTime >= 1.0f) {
+
                 game.countdown--;
                 game.elapsedTime = 0.0f;
+
                 if (game.countdown > 0) {
+
                     PlaySound(game.sounds[COUNTDOWN]);
                 }
             }
@@ -274,6 +296,16 @@ int main(void) {
             drawCircle(ball.position, ball.radius, ball.color);
             drawScore(playerLeft, playerRight);
             drawCountdown(game.countdown, screenWidth, screenHeight);
+
+        } else if (game.state == GAME_COUNTDOWN) {
+
+            drawRectangle(playerLeft.position, playerLeft.size, playerLeft.color);
+            drawRectangle(playerRight.position, playerRight.size, playerRight.color);
+            drawCircle(ball.position, ball.radius, ball.color);
+            drawScore(playerLeft, playerRight);
+            if (game.countdown > 0) {
+                drawCountdown(game.countdown, screenWidth, screenHeight);
+            }
 
         } else if (game.state == GAME_OVER) {
 

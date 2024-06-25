@@ -1,7 +1,7 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
+
 set RAYLIB_LIB=..\externals\raylib\build\raylib\Debug
-REM  set target_src=..\prototypes\proto3\main.c
 set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb -I..\prototypes\proto1
 set target_src=
 set target_lib=/libpath:%RAYLIB_LIB% raylib.lib winmm.lib gdi32.lib opengl32.lib user32.lib kernel32.lib shell32.lib /NODEFAULTLIB:libcmt
@@ -16,12 +16,18 @@ for %%a in (%*) do (
     echo %%a
 )
 
+rem Original logic
+set target_src=%1
 set "filename=%~n1"
 set "newname=%filename%.exe"
+
+echo %filename%
 echo %newname%
 
 set target_c=!filename!
 set target_exe=!newname!
+echo !target_c!
+echo !target_exe!
 
 if not exist bin mkdir bin
 
@@ -64,5 +70,5 @@ popd
 
 :end
 
-
+endlocal
 

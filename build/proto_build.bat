@@ -1,8 +1,7 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
 set RAYLIB_LIB=..\externals\raylib\build\raylib\Debug
-set target_src_dir=..\prototypes\proto3
-set target=snake
+set target_src=..\prototypes\proto3\main.c
 set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb -I..\prototypes\proto1
 set target_src=
 set target_lib=/libpath:%RAYLIB_LIB% raylib.lib winmm.lib gdi32.lib opengl32.lib user32.lib kernel32.lib shell32.lib /NODEFAULTLIB:libcmt
@@ -12,12 +11,17 @@ set configuration=debug
 REM  set verbose=/VERBOSE
 set verbose=
 
+echo Arguments passed:
 for %%a in (%*) do (
-    set target=%%a
+    echo %%a
 )
 
-set target_c=!target_src_dir!\!target!.c
-set target_exe=!target!.exe
+set "filename=%~n1"
+set "newname=%filename%.exe"
+echo %newname%
+
+set target_c=!filename!
+set target_exe=!newname!
 
 if not exist bin mkdir bin
 
@@ -37,23 +41,23 @@ set common_l=!verbose! !target_lib!
 echo.
 echo Compiling...
 pushd bin
-    cl !common_c! -!win_runtime_lib! -Od /Z7 /link !common_l!
-    if "%ERRORLEVEL%" EQU "0" (
-        goto good
-    )
-    if "%ERRORLEVEL%" NEQ "0" (
-        goto bad
-    )
+cl !common_c! -!win_runtime_lib! -Od /Z7 /link !common_l!
+if "%ERRORLEVEL%" EQU "0" (
+    goto good
+)
+if "%ERRORLEVEL%" NEQ "0" (
+    goto bad
+)
 :good
-    echo.
-    xcopy !target_exe! ..\build /i /y
-    echo Running !target_exe!...
-    echo.
-    !target_exe!
-    goto done
+echo.
+xcopy !target_exe! ..\build /i /y
+echo Running !target_exe!...
+echo.
+!target_exe!
+goto done
 :bad
-    echo FAILED
-    goto done
+echo FAILED
+goto done
 :done
 
 popd

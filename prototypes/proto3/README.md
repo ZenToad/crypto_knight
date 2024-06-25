@@ -5,7 +5,9 @@ Sure thing, Tim! Here's a design document and a step-by-step plan to create a Sn
 **Game Title:** Classic Snake
 
 **Overview:**
-Classic Snake is a simple yet engaging game where the player controls a snake that grows longer as it eats food. The objective is to avoid colliding with the walls or the snake's own body while collecting as much food as possible to achieve a high score.
+Classic Snake is a simple yet engaging game where the player controls a snake that grows longer as it eats food. 
+The objective is to avoid colliding with the walls or the snake's own body while collecting as much food 
+as possible to achieve a high score.
 
 **Gameplay:**
 
@@ -114,5 +116,3 @@ Classic Snake is a simple yet engaging game where the player controls a snake th
    - Add simple graphics for the snake and food.
    - Add sound effects for eating food and game over (optional).
    - Test the game thoroughly to ensure it runs smoothly and debug any issues.
-
-By following these steps, you should have a classic Snake game up and running, providing a great way to familiarize yourself with your game engine. Let me know if you need any specific code examples or further details on any part of the process!

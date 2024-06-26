@@ -8,12 +8,13 @@
 #include "raylib.h"
 
 #define GRID_SIZE 20
-#define SCREEN_WIDTH 1920
-#define SCREEN_HEIGHT 1080
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
 
 typedef struct Snake {
     Vector2 position;
     Vector2 direction;
+    Vector2 previousPosition;
 } Snake;
 
 enum GameState {
@@ -37,6 +38,7 @@ void initGameState(int screenWidth, int screenHeight) {
 }
 
 void MoveSnake(Snake *snake) {
+    snake->previousPosition = snake->position;
     snake->position.x += snake->direction.x;
     snake->position.y += snake->direction.y;
 }
@@ -45,7 +47,7 @@ void MoveSnake(Snake *snake) {
 int main(void) {
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "raylib - Scaled Resolution");
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
+    // SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
                                     //
     InitAudioDevice();
 
@@ -59,14 +61,24 @@ int main(void) {
 
     // Initialize snake
     Snake snake = { .position = {10, 10}, .direction = {1, 0} };
+    snake.previousPosition = snake.position;
     float moveTimer = 0.0f;
     const float moveInterval = 0.1f;
 
     initGameState(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    double previousTime = GetTime();	
+    double currentTime = previousTime;	
+    double lag = 0.0;	
+
     //--------------------------------------------------------------------------------------
     // Main game loop
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
+
+        double currentTime = GetTime();	
+        double elapsed = currentTime - previousTime;	
+        previousTime = currentTime;	
+        lag += elapsed;
 
         // Process Input
         //----------------------------------------------------------------------------------
@@ -78,10 +90,16 @@ int main(void) {
         // Update game objects
         //----------------------------------------------------------------------------------
 
-        moveTimer += GetFrameTime();
-        if (moveTimer >= moveInterval) {
-            moveTimer -= moveInterval;
+        while (lag >= moveInterval) {
             MoveSnake(&snake);
+            lag -= moveInterval;
+        };
+
+        // Interpolation	
+        float alpha = lag / moveInterval;	
+        Vector2 interpolatedPosition = {	
+            .x = snake.previousPosition.x * (1.0f - alpha) + snake.position.x * alpha,	
+            .y = snake.previousPosition.y * (1.0f - alpha) + snake.position.y * alpha	
         };
 
         // Render
@@ -95,14 +113,12 @@ int main(void) {
         // Draw grid
         for (int i = 0; i < SCREEN_WIDTH / GRID_SIZE; i++) {
             for (int j = 0; j < SCREEN_HEIGHT / GRID_SIZE; j++) {
-                DrawRectangleLines(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE, LIGHTGRAY);
+                // DrawRectangleLines(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE, LIGHTGRAY);
             }
         }
 
         // Draw snake
-        DrawRectangle(snake.position.x * GRID_SIZE, snake.position.y * GRID_SIZE, GRID_SIZE, GRID_SIZE, DARKGREEN);
-        // Draw your game graphics here using virtual resolution coordinates
-        DrawText("Hello, World!", 100, 100, 20, RED);
+        DrawRectangle(interpolatedPosition.x * GRID_SIZE, interpolatedPosition.y * GRID_SIZE, GRID_SIZE, GRID_SIZE, DARKGREEN);
 
         // EndMode2D();
 

@@ -2,7 +2,7 @@
 setlocal enableextensions enabledelayedexpansion
 set RAYLIB_LIB=..\externals\raylib\build\raylib\Debug
 REM  set target_src=..\prototypes\proto3\main.c
-set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb -I..\prototypes\proto1
+set target_include=-I..\externals\raylib\build\raylib\include\ -I..\externals\raygui\src -I..\externals\raygui\examples\styles -I..\externals\stb -I..\prototypes\proto1 -I..\include
 set target_src=
 set target_lib=/libpath:%RAYLIB_LIB% raylib.lib winmm.lib gdi32.lib opengl32.lib user32.lib kernel32.lib shell32.lib /NODEFAULTLIB:libcmt
 set target_flags=

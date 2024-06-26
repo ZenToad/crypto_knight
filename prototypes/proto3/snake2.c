@@ -33,6 +33,7 @@ int main(void) {
 
     grid[(int)position.x][(int)position.y] = snakeHead;
 
+    bool death = false;
     //--------------------------------------------------------------------------------------
     // Main game loop
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
@@ -52,12 +53,22 @@ int main(void) {
         // for example, if the grid has a 3, then when the snake is moved,
         // we put the head somewhere else, and decrement all other squares,
         // and draw anything in the grid not 0
+        //
+        // Now, if the snake hits the edge or itself turn it red, just to check if
+        // we got that working.  Moving in another direction will go back to green
         if (IsKeyPressed(KEY_RIGHT)) {
             if (position.x + 1 < GRID_SIZE) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.x += 1;
-                grid[(int)position.x][(int)position.y] = snakeHead;
-                moved = true;
+                if (grid[(int)position.x][(int)position.y] != 0) {
+                    death = true;
+                } else {
+                    grid[(int)position.x][(int)position.y] = snakeHead;
+                    moved = true;
+                    death = false;
+                }
+            } else {
+                death = true;
             }
         }
 
@@ -65,8 +76,15 @@ int main(void) {
             if (position.x - 1 >= 0) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.x -= 1;
-                grid[(int)position.x][(int)position.y] = snakeHead;
-                moved = true;
+                if (grid[(int)position.x][(int)position.y] != 0) {
+                    death = true;
+                } else {
+                    grid[(int)position.x][(int)position.y] = snakeHead;
+                    moved = true;
+                    death = false;
+                }
+            } else {
+                death = true;
             }
         }
 
@@ -74,18 +92,32 @@ int main(void) {
             if (position.y - 1 >= 0) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.y -= 1;
-                grid[(int)position.x][(int)position.y] = snakeHead;
-                moved = true;
+                if (grid[(int)position.x][(int)position.y] != 0) {
+                    death = true;
+                } else {
+                    grid[(int)position.x][(int)position.y] = snakeHead;
+                    moved = true;
+                    death = false;
+                }
+            } else {
+                death = true;
             }
-                    
+
         }
 
         if (IsKeyPressed(KEY_DOWN)) {
             if (position.y + 1 < GRID_SIZE) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.y += 1;
-                grid[(int)position.x][(int)position.y] = snakeHead;
-                moved = true;
+                if (grid[(int)position.x][(int)position.y] != 0) {
+                    death = true;
+                } else {
+                    grid[(int)position.x][(int)position.y] = snakeHead;
+                    moved = true;
+                    death = false;
+                }
+            } else {
+                death = true;
             }
                     
         }
@@ -129,7 +161,7 @@ int main(void) {
                         j * SCREEN_HEIGHT / GRID_SIZE, 
                         SCREEN_WIDTH / GRID_SIZE, 
                         SCREEN_HEIGHT / GRID_SIZE, 
-                        GREEN
+                        death ? RED : GREEN
                     );
                 } else if (grid[i][j] > 0) {
                     DrawRectangle(
@@ -137,7 +169,7 @@ int main(void) {
                         j * SCREEN_HEIGHT / GRID_SIZE, 
                         SCREEN_WIDTH / GRID_SIZE, 
                         SCREEN_HEIGHT / GRID_SIZE, 
-                        GREEN
+                        death ? RED : GREEN
                     );
                 }
             }

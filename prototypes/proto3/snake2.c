@@ -16,6 +16,18 @@ Vector2 position = {0, 0};
  * Interesting problem to solve.
  */
 
+// need to randomly spawn food
+// make sure that food doesn't spawn on the snake
+void spawnFood(int *grid, int w, int h) {
+    int x = GetRandomValue(0, w - 1);
+    int y = GetRandomValue(0, h - 1);
+    if (grid[x * w + y] == 0) {
+        grid[x * w + y] = SNAKE_FOOD;
+    } else {
+        spawnFood(grid, w, h);
+    }
+}
+
 int main(void) {
 
     int snakeHead = 5;

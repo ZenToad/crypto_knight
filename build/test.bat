@@ -44,7 +44,7 @@ echo !common_l!
 echo.
 echo Compiling...
 pushd bin
-    cl !common_c! -!win_runtime_lib! -Od /Z7 /link !common_l!
+    cl !common_c! -!win_runtime_lib! /Zi /link !common_l!
     if "%ERRORLEVEL%" EQU "0" (
         goto good
     )

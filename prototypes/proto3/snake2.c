@@ -7,6 +7,13 @@
 
 const int SNAKE_FOOD = 43;
 
+typedef enum player_state_t {
+    PLAYER_ALIVE,
+    PLAYER_CHOMP,
+    PLAYER_DEAD,
+} player_state_t;
+player_state_t player_state = PLAYER_ALIVE;
+
 Vector2 position = {0, 0};
 
 /* 
@@ -18,11 +25,12 @@ Vector2 position = {0, 0};
 
 // need to randomly spawn food
 // make sure that food doesn't spawn on the snake
-void spawnFood(int *grid, int w, int h) {
+void spawnFood(int grid[GRID_SIZE][GRID_SIZE], int w, int h) {
     int x = GetRandomValue(0, w - 1);
     int y = GetRandomValue(0, h - 1);
-    if (grid[x * w + y] == 0) {
-        grid[x * w + y] = SNAKE_FOOD;
+    if (grid[y][x] == 0) {
+        TraceLog(LOG_INFO, "Spawning food at %d, %d", x, y);
+        grid[y][x] = SNAKE_FOOD;
     } else {
         spawnFood(grid, w, h);
     }
@@ -45,12 +53,10 @@ int main(void) {
 
     grid[(int)position.x][(int)position.y] = snakeHead;
 
-    bool death = false;
     //--------------------------------------------------------------------------------------
     // Main game loop
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
 
-        bool moved = false;
         // Process Input
         //----------------------------------------------------------------------------------
         
@@ -73,14 +79,13 @@ int main(void) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.x += 1;
                 if (grid[(int)position.x][(int)position.y] != 0) {
-                    death = true;
+                    player_state = PLAYER_DEAD;
                 } else {
                     grid[(int)position.x][(int)position.y] = snakeHead;
-                    moved = true;
-                    death = false;
+                    player_state = PLAYER_ALIVE;
                 }
             } else {
-                death = true;
+                player_state = PLAYER_DEAD;
             }
         }
 
@@ -89,14 +94,13 @@ int main(void) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.x -= 1;
                 if (grid[(int)position.x][(int)position.y] != 0) {
-                    death = true;
+                    player_state = PLAYER_DEAD;
                 } else {
                     grid[(int)position.x][(int)position.y] = snakeHead;
-                    moved = true;
-                    death = false;
+                    player_state = PLAYER_ALIVE;
                 }
             } else {
-                death = true;
+                player_state = PLAYER_DEAD;
             }
         }
 
@@ -104,15 +108,14 @@ int main(void) {
             if (position.y - 1 >= 0) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.y -= 1;
-                if (grid[(int)position.x][(int)position.y] != 0) {
-                    death = true;
+                if (grid[(int)position.x][(int)position.y] != 0 && grid[(int)position.x][(int)position.y] != SNAKE_FOOD) {
+                    player_state = PLAYER_DEAD;
                 } else {
                     grid[(int)position.x][(int)position.y] = snakeHead;
-                    moved = true;
-                    death = false;
+                    player_state = PLAYER_ALIVE;
                 }
             } else {
-                death = true;
+                player_state = PLAYER_DEAD;
             }
 
         }
@@ -121,26 +124,27 @@ int main(void) {
             if (position.y + 1 < GRID_SIZE) {
                 grid[(int)position.x][(int)position.y] -= 1;
                 position.y += 1;
-                if (grid[(int)position.x][(int)position.y] != 0) {
-                    death = true;
+                if (grid[(int)position.x][(int)position.y] != 0 && grid[(int)position.x][(int)position.y] != SNAKE_FOOD) {
+                    player_state = PLAYER_DEAD;
                 } else {
                     grid[(int)position.x][(int)position.y] = snakeHead;
-                    moved = true;
-                    death = false;
+                    player_state = PLAYER_ALIVE;
+                    player_state = PLAYER_DEAD;
                 }
             } else {
-                death = true;
+                player_state = PLAYER_DEAD;
             }
                     
         }
+
         if (IsKeyPressed(KEY_SPACE)) {
-            snakeHead += 1;
+            spawnFood(grid, GRID_SIZE, GRID_SIZE);
         }
 
         // Update game objects
         //----------------------------------------------------------------------------------
 
-        if (moved) {
+        if (player_state == PLAYER_ALIVE) {
             for (int i = 0; i < GRID_SIZE; i++) {
                 for (int j = 0; j < GRID_SIZE; j++) {
                     if (grid[i][j] != snakeHead && grid[i][j] != SNAKE_FOOD) {
@@ -173,7 +177,7 @@ int main(void) {
                         j * SCREEN_HEIGHT / GRID_SIZE, 
                         SCREEN_WIDTH / GRID_SIZE, 
                         SCREEN_HEIGHT / GRID_SIZE, 
-                        death ? RED : GREEN
+                        player_state == PLAYER_DEAD ? RED : GREEN
                     );
                 } else if (grid[i][j] > 0) {
                     DrawRectangle(
@@ -181,12 +185,26 @@ int main(void) {
                         j * SCREEN_HEIGHT / GRID_SIZE, 
                         SCREEN_WIDTH / GRID_SIZE, 
                         SCREEN_HEIGHT / GRID_SIZE, 
-                        death ? RED : GREEN
+                        player_state == PLAYER_DEAD ? RED : GREEN
                     );
                 }
             }
         }
 
+        // draw food
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+            if (grid[i][j] == SNAKE_FOOD) {
+                DrawRectangle(
+                    i * SCREEN_WIDTH / GRID_SIZE, 
+                    j * SCREEN_HEIGHT / GRID_SIZE, 
+                    SCREEN_WIDTH / GRID_SIZE, 
+                    SCREEN_HEIGHT / GRID_SIZE, 
+                    YELLOW
+                );
+            }
+            }
+        }
 
         EndDrawing();
 

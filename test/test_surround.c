@@ -16,8 +16,10 @@ int main(int argc, char *argv[]) {
    * ys = add surrounding
    * vS = surround visual selection
    *
+   * ys[vim motion or text object]: ysiw) you surround inner word )
+   * yss = current line minus white space
    *
-   *
+   * *a/plugin, ys', 'a/plugin'
    *
    */
     // change surrounding cs

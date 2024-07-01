@@ -1,5 +1,6 @@
 #include "raylib.h"
-#include "ck_acme.h"
+#include <assert.h>
+// #include "ck_acme.h"
 
 #define GRID_SIZE 8
 #define SCREEN_WIDTH 800
@@ -29,7 +30,6 @@ typedef struct game_state_t {
     player_state_t player_state;
     Vector2 position;
     Vector2 previousPosition;
-    bool spawnFood;
 } game_state_t;
 game_state_t game_state = {0};
 
@@ -42,12 +42,12 @@ void initializeGame(void) {
     game_state.position = (Vector2){2, 2};
     game_state.previousPosition = game_state.position;
 
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            game_state.grid[i][j] = 0;
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            game_state.grid[row][col] = 0;
         }
     }
-    game_state.grid[(int)game_state.position.x][(int)game_state.position.y] = SNAKE_HEAD;
+    game_state.grid[(int)game_state.position.y][(int)game_state.position.x] = SNAKE_HEAD;
     spawnFood();
 }
 
@@ -91,33 +91,40 @@ void printGameState(void) {
     TraceLog(LOG_INFO, "Player Previous Position: %d, %d", (int)game_state.previousPosition.x, (int)game_state.previousPosition.y);
     printDirection(game_state.dir);
     TraceLog(LOG_INFO, "Player Snake Length: %d", game_state.snakeBodyLength);
-    TraceLog(LOG_INFO, "Player Spawn Food: %d", game_state.spawnFood);
 }
 
-bool isCellEmpty(int x, int y) {
-    return game_state.grid[x][y] == 0;
+bool isCellEmpty(Vector2 pos) {
+    return game_state.grid[(int)pos.y][(int)pos.x] == 0;
 }
 
-// need to randomly spawn food
-// make sure that food doesn't spawn on the snake
+bool containsFood(Vector2 pos) {
+    return game_state.grid[(int)pos.y][(int)pos.x] == SNAKE_FOOD;
+}
+
 void spawnFood(void) {
-    int x = GetRandomValue(0, GRID_SIZE - 1);
-    int y = GetRandomValue(0, GRID_SIZE - 1);
-    if (isCellEmpty(x, y)) {
-        TraceLog(LOG_INFO, "Spawning food at %d, %d", x, y);
-        game_state.grid[y][x] = SNAKE_FOOD;
-    } else {
-        spawnFood();
-    }
+    // find an empty cell
+    // I reall hate this...
+    Vector2 pos = {0, 0};
+    int tries = 0;
+    do {
+        pos.x = GetRandomValue(0, GRID_SIZE - 1);
+        pos.y = GetRandomValue(0, GRID_SIZE - 1);
+        tries++;
+        assert(tries < 100 && "Could not find an empty cell to spawn food");
+    } while (!isCellEmpty(pos));     
+    game_state.grid[(int)pos.y][(int)pos.x] = SNAKE_FOOD;
 }
 
 // The next step here is to draw the number value of each grid cell
 // in the cell for debugging purposes
 void drawDebugGrid() {
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
+    float dx = (int)(SCREEN_WIDTH / GRID_SIZE);
+    float dy = (int)(SCREEN_HEIGHT / GRID_SIZE);
+
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
             // void DrawText(const char *text, int posX, int posY, int fontSize, Color color)
-            DrawText(TextFormat("%d", game_state.grid[i][j]), i * SCREEN_WIDTH / GRID_SIZE, j * SCREEN_HEIGHT / GRID_SIZE, 48, DARKGREEN);
+            DrawText(TextFormat("%d", game_state.grid[row][col]), col * dx, row * dy, 48, DARKGREEN);
         }
     }
 }
@@ -128,7 +135,6 @@ void drawDebugGrid() {
 void handleInput(void) {
 
     game_state.dir = DIRECTION_NONE;
-    game_state.spawnFood = false;
 
     if (IsKeyPressed(KEY_RIGHT)) {
         game_state.dir = DIRECTION_RIGHT;
@@ -151,7 +157,7 @@ void handleInput(void) {
     }
 
     if (IsKeyPressed(KEY_SPACE)) {
-        game_state.spawnFood = true;
+        spawnFood();
     }
 
     if (IsKeyPressed(KEY_R)) {
@@ -186,8 +192,12 @@ void updateWorld(void) {
         }
 
         game_state.dir = DIRECTION_NONE;
-        game_state.grid[(int)game_state.previousPosition.x][(int)game_state.previousPosition.y] = game_state.snakeBodyLength;
-        game_state.grid[(int)game_state.position.x][(int)game_state.position.y] = SNAKE_HEAD;
+        game_state.grid[(int)game_state.previousPosition.y][(int)game_state.previousPosition.x] = game_state.snakeBodyLength;
+        if (containsFood(game_state.position)) {
+            game_state.player_state = PLAYER_CHOMP;
+        }
+        game_state.grid[(int)game_state.position.y][(int)game_state.position.x] = SNAKE_HEAD;
+
         // we need to update the grid
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
@@ -213,54 +223,42 @@ void updateWorld(void) {
     // if the snake has eaten, we need to grow the snake
     if (game_state.player_state == PLAYER_CHOMP) {
         // we need to grow the snake
+        game_state.snakeBodyLength += 1;
+        spawnFood();
+        game_state.player_state = PLAYER_ALIVE;
         // we need to update the grid
     }
 }
 
 void drawGame(void) {
     // Draw grid
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            DrawRectangleLines(i * SCREEN_WIDTH / GRID_SIZE, j * SCREEN_HEIGHT / GRID_SIZE, SCREEN_WIDTH / GRID_SIZE, SCREEN_HEIGHT / GRID_SIZE, LIGHTGRAY);
+    int dx = SCREEN_WIDTH / GRID_SIZE;
+    int dy = SCREEN_HEIGHT / GRID_SIZE;
+
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            DrawRectangleLines(col * dx, row * dy, dx, dy, LIGHTGRAY);
         }
     }
 
     // draw snake
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            if (game_state.grid[i][j] == SNAKE_HEAD) {
-                DrawRectangle(
-                        i * SCREEN_WIDTH / GRID_SIZE, 
-                        j * SCREEN_HEIGHT / GRID_SIZE, 
-                        SCREEN_WIDTH / GRID_SIZE, 
-                        SCREEN_HEIGHT / GRID_SIZE, 
-                        game_state.player_state == PLAYER_DEAD ? RED : GREEN
-                        );
-            } else if (game_state.grid[i][j] > 0) {
-                DrawRectangle(
-                        i * SCREEN_WIDTH / GRID_SIZE, 
-                        j * SCREEN_HEIGHT / GRID_SIZE, 
-                        SCREEN_WIDTH / GRID_SIZE, 
-                        SCREEN_HEIGHT / GRID_SIZE, 
-                        game_state.player_state == PLAYER_DEAD ? RED : GREEN
-                        );
+    Color snakeColor = game_state.player_state == PLAYER_DEAD ? RED : GREEN;
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            if (game_state.grid[row][col] == SNAKE_HEAD) {
+                DrawRectangle(col * dx, row * dy, dx, dy, snakeColor);
+            } 
+            else if (game_state.grid[row][col] > 0) {
+                DrawRectangle(col * dx, row * dy, dx, dy, snakeColor);
             }
         }
     }
 
-
-
     // draw food
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            if (game_state.grid[i][j] == SNAKE_FOOD) {
-                DrawRectangle(
-                    i * SCREEN_WIDTH / GRID_SIZE, 
-                    j * SCREEN_HEIGHT / GRID_SIZE, 
-                    SCREEN_WIDTH / GRID_SIZE, 
-                    SCREEN_HEIGHT / GRID_SIZE, 
-                    YELLOW
-                );
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            if (game_state.grid[row][col] == SNAKE_FOOD) {
+                DrawRectangle(col * dx, row * dy, dx, dy, YELLOW);
             }
         }
     }

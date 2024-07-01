@@ -6,6 +6,7 @@
 #define SCREEN_HEIGHT 800
 
 const int SNAKE_FOOD = 43;
+const int SNAKE_HEAD = 42;
 
 typedef enum direction_t {
     DIRECTION_NONE  = 0x0,
@@ -23,14 +24,75 @@ typedef enum player_state_t {
 
 typedef struct game_state_t {
     int grid[GRID_SIZE][GRID_SIZE];
-    int snakeHead;
+    int snakeBodyLength;
     direction_t dir;
     player_state_t player_state;
     Vector2 position;
+    Vector2 previousPosition;
     bool spawnFood;
 } game_state_t;
 game_state_t game_state = {0};
 
+void spawnFood(void);
+
+void initializeGame(void) {
+    game_state.snakeBodyLength = 3;
+    game_state.dir = DIRECTION_NONE;
+    game_state.player_state = PLAYER_ALIVE;
+    game_state.position = (Vector2){2, 2};
+    game_state.previousPosition = game_state.position;
+
+    for (int i = 0; i < GRID_SIZE; i++) {
+        for (int j = 0; j < GRID_SIZE; j++) {
+            game_state.grid[i][j] = 0;
+        }
+    }
+    game_state.grid[(int)game_state.position.x][(int)game_state.position.y] = SNAKE_HEAD;
+    spawnFood();
+}
+
+void printDirection(direction_t dir) {
+    switch (dir) {
+        case DIRECTION_NONE:
+            TraceLog(LOG_INFO, "Player Direction: DIRECTION_NONE");
+            break;
+        case DIRECTION_UP:
+            TraceLog(LOG_INFO, "Player Direction: DIRECTION_UP");
+            break;
+        case DIRECTION_DOWN:
+            TraceLog(LOG_INFO, "Player Direction: DIRECTION_DOWN");
+            break;
+        case DIRECTION_LEFT:
+            TraceLog(LOG_INFO, "Player Direction: DIRECTION_LEFT");
+            break;
+        case DIRECTION_RIGHT:
+            TraceLog(LOG_INFO, "Player Direction: DIRECTION_RIGHT");
+            break;
+    }
+}
+
+void printPlayerState(player_state_t state) {
+    switch (state) {
+        case PLAYER_ALIVE:
+            TraceLog(LOG_INFO, "Player State: PLAYER_ALIVE");
+            break;
+        case PLAYER_CHOMP:
+            TraceLog(LOG_INFO, "Player State: PLAYER_CHOMP");
+            break;
+        case PLAYER_DEAD:
+            TraceLog(LOG_INFO, "Player State: PLAYER_DEAD");
+            break;
+    }
+}
+
+void printGameState(void) {
+    printPlayerState(game_state.player_state);
+    TraceLog(LOG_INFO, "Player Position: %d, %d", (int)game_state.position.x, (int)game_state.position.y);
+    TraceLog(LOG_INFO, "Player Previous Position: %d, %d", (int)game_state.previousPosition.x, (int)game_state.previousPosition.y);
+    printDirection(game_state.dir);
+    TraceLog(LOG_INFO, "Player Snake Length: %d", game_state.snakeBodyLength);
+    TraceLog(LOG_INFO, "Player Spawn Food: %d", game_state.spawnFood);
+}
 
 bool isCellEmpty(int x, int y) {
     return game_state.grid[x][y] == 0;
@@ -70,22 +132,34 @@ void handleInput(void) {
 
     if (IsKeyPressed(KEY_RIGHT)) {
         game_state.dir = DIRECTION_RIGHT;
+        TraceLog(LOG_INFO, "Right key pressed");
     }
 
     if (IsKeyPressed(KEY_LEFT)) {
         game_state.dir = DIRECTION_LEFT;
+        TraceLog(LOG_INFO, "Left key pressed");
     }
 
     if (IsKeyPressed(KEY_UP)) {
         game_state.dir = DIRECTION_UP;
+        TraceLog(LOG_INFO, "Up key pressed");
     }
 
     if (IsKeyPressed(KEY_DOWN)) {
         game_state.dir = DIRECTION_DOWN;
+        TraceLog(LOG_INFO, "Down key pressed");
     }
 
     if (IsKeyPressed(KEY_SPACE)) {
         game_state.spawnFood = true;
+    }
+
+    if (IsKeyPressed(KEY_R)) {
+        initializeGame();
+    }
+
+    if (IsKeyPressed(KEY_P)) {
+        printGameState();
     }
 
 }
@@ -93,9 +167,41 @@ void handleInput(void) {
 void updateWorld(void) {
     // if the snake is alive, we need to move the snake
     // and update the grid
-    if (game_state.player_state == PLAYER_ALIVE) {
+    if (game_state.player_state == PLAYER_ALIVE && game_state.dir != DIRECTION_NONE) {
+
+        game_state.previousPosition = game_state.position;
+
         // we need to move the snake
+        if (game_state.dir == DIRECTION_RIGHT) {
+            game_state.position.x += 1;
+        }
+        if (game_state.dir == DIRECTION_LEFT) {
+            game_state.position.x -= 1;
+        }
+        if (game_state.dir == DIRECTION_UP) {
+            game_state.position.y -= 1;
+        }
+        if (game_state.dir == DIRECTION_DOWN) {
+            game_state.position.y += 1;
+        }
+
+        game_state.dir = DIRECTION_NONE;
+        game_state.grid[(int)game_state.previousPosition.x][(int)game_state.previousPosition.y] = game_state.snakeBodyLength;
+        game_state.grid[(int)game_state.position.x][(int)game_state.position.y] = SNAKE_HEAD;
         // we need to update the grid
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                if (game_state.position.x == col && game_state.position.y == row) {
+                    continue;
+                }
+                if (game_state.grid[row][col] != SNAKE_FOOD && game_state.grid[row][col] != SNAKE_HEAD) {
+                    if (game_state.grid[row][col] > 0) {
+                        game_state.grid[row][col] -= 1;
+                    }
+                }
+            }
+        }
+
         // we need to check if the snake is dead
         // we need to check if the snake has eaten
         // we need to check if the snake has hit the wall
@@ -111,94 +217,6 @@ void updateWorld(void) {
     }
 }
 
-void initializeGame(void) {
-    game_state.snakeHead = 2;
-    game_state.dir = DIRECTION_NONE;
-    game_state.player_state = PLAYER_ALIVE;
-    game_state.position.x = 2;
-    game_state.position.y = 2;
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            game_state.grid[i][j] = 0;
-        }
-    }
-    game_state.grid[(int)game_state.position.x][(int)game_state.position.y] = game_state.snakeHead;
-    spawnFood();
-}
-
-// void archiveUpdate(void) {
-//     if (IsKeyPressed(KEY_RIGHT)) {
-//         if (position.x + 1 < GRID_SIZE) {
-//             grid[(int)position.x][(int)position.y] -= 1;
-//             position.x += 1;
-//             if (grid[(int)position.x][(int)position.y] != 0) {
-//                 player_state = PLAYER_DEAD;
-//             } else {
-//                 snakeHead += 1;
-//                 grid[(int)position.x][(int)position.y] = snakeHead;
-//                 player_state = PLAYER_ALIVE;
-//             }
-//         } else {
-//             player_state = PLAYER_DEAD;
-//         }
-//     }
-//
-//     if (IsKeyPressed(KEY_LEFT)) {
-//         if (position.x - 1 >= 0) {
-//             grid[(int)position.x][(int)position.y] -= 1;
-//             position.x -= 1;
-//             if (grid[(int)position.x][(int)position.y] != 0) {
-//                 player_state = PLAYER_DEAD;
-//             } else {
-//                 snakeHead += 1;
-//                 grid[(int)position.x][(int)position.y] = snakeHead;
-//                 player_state = PLAYER_ALIVE;
-//             }
-//         } else {
-//             player_state = PLAYER_DEAD;
-//         }
-//     }
-//
-//     if (IsKeyPressed(KEY_UP)) {
-//         if (position.y - 1 >= 0) {
-//             grid[(int)position.x][(int)position.y] -= 1;
-//             position.y -= 1;
-//             if (grid[(int)position.x][(int)position.y] != 0 && grid[(int)position.x][(int)position.y] != SNAKE_FOOD) {
-//                 player_state = PLAYER_DEAD;
-//             } else {
-//                 snakeHead+= 1;
-//                 grid[(int)position.x][(int)position.y] = snakeHead;
-//                 player_state = PLAYER_ALIVE;
-//             }
-//         } else {
-//             player_state = PLAYER_DEAD;
-//         }
-//
-//     }
-//
-//     if (IsKeyPressed(KEY_DOWN)) {
-//         if (position.y + 1 < GRID_SIZE) {
-//             grid[(int)position.x][(int)position.y] -= 1;
-//             position.y += 1;
-//             if (grid[(int)position.x][(int)position.y] != 0 && grid[(int)position.x][(int)position.y] != SNAKE_FOOD) {
-//                 player_state = PLAYER_DEAD;
-//             } else {
-//                 snakeHead += 1;
-//                 grid[(int)position.x][(int)position.y] = snakeHead;
-//                 player_state = PLAYER_ALIVE;
-//             }
-//         } else {
-//             player_state = PLAYER_DEAD;
-//         }
-//
-//     }
-//
-//     if (IsKeyPressed(KEY_SPACE)) {
-//         spawnFood(grid, GRID_SIZE, GRID_SIZE);
-//     }
-//
-// }
-
 void drawGame(void) {
     // Draw grid
     for (int i = 0; i < GRID_SIZE; i++) {
@@ -210,7 +228,7 @@ void drawGame(void) {
     // draw snake
     for (int i = 0; i < GRID_SIZE; i++) {
         for (int j = 0; j < GRID_SIZE; j++) {
-            if (game_state.grid[i][j] == game_state.snakeHead) {
+            if (game_state.grid[i][j] == SNAKE_HEAD) {
                 DrawRectangle(
                         i * SCREEN_WIDTH / GRID_SIZE, 
                         j * SCREEN_HEIGHT / GRID_SIZE, 
@@ -237,12 +255,12 @@ void drawGame(void) {
         for (int j = 0; j < GRID_SIZE; j++) {
             if (game_state.grid[i][j] == SNAKE_FOOD) {
                 DrawRectangle(
-                        i * SCREEN_WIDTH / GRID_SIZE, 
-                        j * SCREEN_HEIGHT / GRID_SIZE, 
-                        SCREEN_WIDTH / GRID_SIZE, 
-                        SCREEN_HEIGHT / GRID_SIZE, 
-                        YELLOW
-                        );
+                    i * SCREEN_WIDTH / GRID_SIZE, 
+                    j * SCREEN_HEIGHT / GRID_SIZE, 
+                    SCREEN_WIDTH / GRID_SIZE, 
+                    SCREEN_HEIGHT / GRID_SIZE, 
+                    YELLOW
+                );
             }
         }
     }
@@ -272,17 +290,6 @@ int main(void) {
         //----------------------------------------------------------------------------------
         updateWorld();
 
-        // if (player_state == PLAYER_ALIVE) {
-        //     for (int i = 0; i < GRID_SIZE; i++) {
-        //         for (int j = 0; j < GRID_SIZE; j++) {
-        //             if (grid[i][j] != snakeHead && grid[i][j] != SNAKE_FOOD) {
-        //                 if (grid[i][j] > 0) {
-        //                     grid[i][j] -= 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
         // Render
         // ---------------------------------------------------------------------------------
         BeginDrawing();

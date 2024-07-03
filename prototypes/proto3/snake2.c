@@ -7,6 +7,8 @@
 #define SCREEN_HEIGHT 800
 #define MAX_EVENTS 10
 
+// TODO: these could change if grid is way larger
+// Not sure what to do
 const int SNAKE_FOOD = 99;
 const int SNAKE_HEAD = 98;
 
@@ -238,7 +240,48 @@ void processInputEvents(void) {
     }
 }
 
+void processGameEvents(void) {
+    for (int i = 0; i < game_state.eventLength; i++) {
+        switch (game_state.event[i]) {
+            case GAME_EVENT_PLAYER_RIGHT:
+                if (game_state.dir != DIRECTION_LEFT) {
+                    game_state.dir = DIRECTION_RIGHT;
+                }
+                break;
+            case GAME_EVENT_PLAYER_LEFT:
+                if (game_state.dir != DIRECTION_RIGHT) {
+                    game_state.dir = DIRECTION_LEFT;
+                }
+                break;
+            case GAME_EVENT_PLAYER_UP:
+                if (game_state.dir != DIRECTION_DOWN) {
+                    game_state.dir = DIRECTION_UP;
+                }
+                break;
+            case GAME_EVENT_PLAYER_DOWN:
+                if (game_state.dir != DIRECTION_UP) {
+                    game_state.dir = DIRECTION_DOWN;
+                }
+                break;
+            case GAME_EVENT_SPAWN_FOOD:
+                spawnFood();
+                break;
+            case GAME_EVENT_RESET_GAME:
+                initializeGame();
+                break;
+            case GAME_EVENT_DEBUG_PRINT:
+                printGameState();
+                break;
+            case GAME_EVENT_NONE:
+                break;
+        }
+    }
+}
+
 void updateWorld(void) {
+
+    processInputEvents();
+
     // if the snake is alive, we need to move the snake
     // and update the grid
     if (game_state.player_state == PLAYER_ALIVE && game_state.dir != DIRECTION_NONE) {

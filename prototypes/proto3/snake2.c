@@ -5,9 +5,21 @@
 #define GRID_SIZE 8
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
+#define MAX_EVENTS 10
 
 const int SNAKE_FOOD = 99;
 const int SNAKE_HEAD = 98;
+
+typedef enum game_event_t {
+    GAME_EVENT_NONE,
+    GAME_EVENT_PLAYER_UP,
+    GAME_EVENT_PLAYER_DOWN,
+    GAME_EVENT_PLAYER_LEFT,
+    GAME_EVENT_PLAYER_RIGHT,
+    GAME_EVENT_SPAWN_FOOD,
+    GAME_EVENT_RESET_GAME,
+    GAME_EVENT_DEBUG_PRINT,
+} game_event_t;
 
 typedef enum direction_t {
     DIRECTION_NONE  = 0x0,
@@ -24,7 +36,12 @@ typedef enum player_state_t {
 } player_state_t;
 
 typedef struct game_state_t {
+    game_event_t event[MAX_EVENTS];
+    int eventLength;
     int grid[GRID_SIZE][GRID_SIZE];
+    Vector2 searchGrid[GRID_SIZE * GRID_SIZE];
+    int input [GRID_SIZE];
+    int inputLength;
     int snakeBodyLength;
     direction_t dir;
     direction_t prev_dir;
@@ -46,6 +63,7 @@ void initializeGame(void) {
     for (int row = 0; row < GRID_SIZE; row++) {
         for (int col = 0; col < GRID_SIZE; col++) {
             game_state.grid[row][col] = 0;
+            game_state.searchGrid[row * GRID_SIZE + col] = (Vector2){0,0};
         }
     }
     game_state.grid[(int)game_state.position.y][(int)game_state.position.x] = SNAKE_HEAD;
@@ -120,17 +138,17 @@ bool containsFood(Vector2 pos) {
 }
 
 void spawnFood(void) {
-    // find an empty cell
-    // I reall hate this...
-    Vector2 pos = {0, 0};
-    int tries = 0;
-    do {
-        pos.x = GetRandomValue(0, GRID_SIZE - 1);
-        pos.y = GetRandomValue(0, GRID_SIZE - 1);
-        tries++;
-        assert(tries < 100 && "Could not find an empty cell to spawn food");
-    } while (!isCellEmpty(pos));     
-    game_state.grid[(int)pos.y][(int)pos.x] = SNAKE_FOOD;
+    int len = 0;
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            if (game_state.grid[row][col] == 0) {
+                game_state.searchGrid[len] = (Vector2){col, row};
+                len++;
+            }
+        }
+    }
+    int idx = GetRandomValue(0, len - 1);
+    game_state.grid[(int)game_state.searchGrid[idx].y][(int)game_state.searchGrid[idx].x] = SNAKE_FOOD;
 }
 
 // The next step here is to draw the number value of each grid cell
@@ -152,43 +170,72 @@ void drawDebugGrid() {
 // updated the world in another function
 void handleInput(void) {
 
-    // not sure what is wrong here but ffs why is this so hard?
-    // can't move in the opposite direction
+    game_state_t *g = &game_state;
+    g->inputLength = 0;
 
-    game_state.dir = DIRECTION_NONE;
-
-    if (IsKeyPressed(KEY_RIGHT) && game_state.prev_dir != KEY_LEFT) {
-        game_state.dir = DIRECTION_RIGHT;
+    if (IsKeyPressed(KEY_RIGHT)) {
+        g->input[g->inputLength++] = KEY_RIGHT;
         TraceLog(LOG_INFO, "Right key pressed");
     }
 
-    if (IsKeyPressed(KEY_LEFT) && game_state.prev_dir != KEY_RIGHT) {
-        game_state.dir = DIRECTION_LEFT;
+    if (IsKeyPressed(KEY_LEFT)) {
+        g->input[g->inputLength++] = KEY_LEFT;
         TraceLog(LOG_INFO, "Left key pressed");
     }
 
-    if (IsKeyPressed(KEY_UP) && game_state.prev_dir != KEY_DOWN) {
-        game_state.dir = DIRECTION_UP;
+    if (IsKeyPressed(KEY_UP)) {
+        g->input[g->inputLength++] = KEY_UP;
         TraceLog(LOG_INFO, "Up key pressed");
     }
 
-    if (IsKeyPressed(KEY_DOWN) && game_state.prev_dir != KEY_UP) {
-        game_state.dir = DIRECTION_DOWN;
+    if (IsKeyPressed(KEY_DOWN)) {
+        g->input[g->inputLength++] = KEY_DOWN;
         TraceLog(LOG_INFO, "Down key pressed");
     }
 
     if (IsKeyPressed(KEY_SPACE)) {
-        spawnFood();
+        g->input[g->inputLength++] = KEY_SPACE;
     }
 
     if (IsKeyPressed(KEY_R)) {
-        initializeGame();
+        g->input[g->inputLength++] = KEY_R;
     }
 
     if (IsKeyPressed(KEY_P)) {
-        printGameState();
+        g->input[g->inputLength++] = KEY_P;
     }
 
+}
+
+void processInputEvents(void) {
+    // this is where we could map any input key to any game event
+    game_state.eventLength = 0;
+
+    for (int i = 0; i < game_state.inputLength; i++) {
+        switch (game_state.input[i]) {
+            case KEY_RIGHT:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_PLAYER_RIGHT;
+                break;
+            case KEY_LEFT:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_PLAYER_LEFT;
+                break;
+            case KEY_UP:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_PLAYER_UP;
+                break;
+            case KEY_DOWN:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_PLAYER_DOWN;
+                break;
+            case KEY_SPACE:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_SPAWN_FOOD;
+                break;
+            case KEY_R:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_RESET_GAME;
+                break;
+            case KEY_P:
+                game_state.event[game_state.eventLength++] = GAME_EVENT_DEBUG_PRINT;
+                break;
+        }
+    }
 }
 
 void updateWorld(void) {

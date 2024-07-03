@@ -6,8 +6,8 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
 
-const int SNAKE_FOOD = 43;
-const int SNAKE_HEAD = 42;
+const int SNAKE_FOOD = 99;
+const int SNAKE_HEAD = 98;
 
 typedef enum direction_t {
     DIRECTION_NONE  = 0x0,
@@ -27,6 +27,7 @@ typedef struct game_state_t {
     int grid[GRID_SIZE][GRID_SIZE];
     int snakeBodyLength;
     direction_t dir;
+    direction_t prev_dir;
     player_state_t player_state;
     Vector2 position;
     Vector2 previousPosition;
@@ -51,7 +52,7 @@ void initializeGame(void) {
     spawnFood();
 }
 
-void printDirection(direction_t dir) {
+void printDirection(direction_t dir, direction_t prev) {
     switch (dir) {
         case DIRECTION_NONE:
             TraceLog(LOG_INFO, "Player Direction: DIRECTION_NONE");
@@ -67,6 +68,23 @@ void printDirection(direction_t dir) {
             break;
         case DIRECTION_RIGHT:
             TraceLog(LOG_INFO, "Player Direction: DIRECTION_RIGHT");
+            break;
+    }
+    switch (prev) {
+        case DIRECTION_NONE:
+            TraceLog(LOG_INFO, "Previous Direction: DIRECTION_NONE");
+            break;
+        case DIRECTION_UP:
+            TraceLog(LOG_INFO, "Previous Direction: DIRECTION_UP");
+            break;
+        case DIRECTION_DOWN:
+            TraceLog(LOG_INFO, "Previous Direction: DIRECTION_DOWN");
+            break;
+        case DIRECTION_LEFT:
+            TraceLog(LOG_INFO, "Previous Direction: DIRECTION_LEFT");
+            break;
+        case DIRECTION_RIGHT:
+            TraceLog(LOG_INFO, "Previous Direction: DIRECTION_RIGHT");
             break;
     }
 }
@@ -89,7 +107,7 @@ void printGameState(void) {
     printPlayerState(game_state.player_state);
     TraceLog(LOG_INFO, "Player Position: %d, %d", (int)game_state.position.x, (int)game_state.position.y);
     TraceLog(LOG_INFO, "Player Previous Position: %d, %d", (int)game_state.previousPosition.x, (int)game_state.previousPosition.y);
-    printDirection(game_state.dir);
+    printDirection(game_state.dir, game_state.prev_dir);
     TraceLog(LOG_INFO, "Player Snake Length: %d", game_state.snakeBodyLength);
 }
 
@@ -134,24 +152,27 @@ void drawDebugGrid() {
 // updated the world in another function
 void handleInput(void) {
 
+    // not sure what is wrong here but ffs why is this so hard?
+    // can't move in the opposite direction
+
     game_state.dir = DIRECTION_NONE;
 
-    if (IsKeyPressed(KEY_RIGHT)) {
+    if (IsKeyPressed(KEY_RIGHT) && game_state.prev_dir != KEY_LEFT) {
         game_state.dir = DIRECTION_RIGHT;
         TraceLog(LOG_INFO, "Right key pressed");
     }
 
-    if (IsKeyPressed(KEY_LEFT)) {
+    if (IsKeyPressed(KEY_LEFT) && game_state.prev_dir != KEY_RIGHT) {
         game_state.dir = DIRECTION_LEFT;
         TraceLog(LOG_INFO, "Left key pressed");
     }
 
-    if (IsKeyPressed(KEY_UP)) {
+    if (IsKeyPressed(KEY_UP) && game_state.prev_dir != KEY_DOWN) {
         game_state.dir = DIRECTION_UP;
         TraceLog(LOG_INFO, "Up key pressed");
     }
 
-    if (IsKeyPressed(KEY_DOWN)) {
+    if (IsKeyPressed(KEY_DOWN) && game_state.prev_dir != KEY_UP) {
         game_state.dir = DIRECTION_DOWN;
         TraceLog(LOG_INFO, "Down key pressed");
     }
@@ -175,6 +196,7 @@ void updateWorld(void) {
     // and update the grid
     if (game_state.player_state == PLAYER_ALIVE && game_state.dir != DIRECTION_NONE) {
 
+        game_state.prev_dir = game_state.dir;
         game_state.previousPosition = game_state.position;
 
         // we need to move the snake
@@ -191,7 +213,7 @@ void updateWorld(void) {
             game_state.position.y += 1;
         }
 
-        game_state.dir = DIRECTION_NONE;
+        // game_state.dir = DIRECTION_NONE;
         game_state.grid[(int)game_state.previousPosition.y][(int)game_state.previousPosition.x] = game_state.snakeBodyLength;
         if (containsFood(game_state.position)) {
             game_state.player_state = PLAYER_CHOMP;

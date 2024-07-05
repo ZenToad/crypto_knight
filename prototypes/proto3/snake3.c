@@ -25,8 +25,18 @@ typedef enum input_map_type_t {
     IM_EVENT_COUNT,
 } input_map_type_t;
 
+typedef enum player_direction_t {
+    PLAYER_DIR_UP = 0,
+    PLAYER_DIR_DOWN,
+    PLAYER_DIR_RIGHT,
+    PLAYER_DIR_LEFT,
+} player_direction_t;
+
 typedef enum game_event_type_t {
     GE_PLAYER_MOVE_UP = 0,
+    GE_PLAYER_MOVE_DOWN,
+    GE_PLAYER_MOVE_LEFT,
+    GE_PLAYER_MOVE_RIGHT,
     GE_EVENT_COUNT,
 } game_event_type_t;
 
@@ -35,6 +45,11 @@ typedef struct input_map_t {
     game_event_type_t eventType;
     int data; 
 } input_map_t;
+
+typedef struct game_state_t {
+    player_direction_t currDir; 
+} game_state_t;
+game_state_t G = {0};
 
 input_map_t inputMap[INPUT_MAP_MAX];
 int inputMapLength = 0;
@@ -52,11 +67,9 @@ void processInput(void) {
         input_map_t *im = &inputMap[i];
         if (im->inputType == IM_KEYPRESS) {
             if (IsKeyPressed(im->data)) {
-                // Add event to event list
                 eventList[eventListLength++] = (game_event_type_t){im->eventType};
             }
         }
-        // ... ect ...
     }
 }
 
@@ -65,20 +78,57 @@ void processGameEvents(void) {
         game_event_type_t ge = eventList[i];
         switch (ge) {
             case GE_PLAYER_MOVE_UP: {
-                // Move player up
                 TraceLog(LOG_INFO, "Player move up event");
+                // what do we even do here?
+                // check current player direction.  If it isn't going down,
+                // we can go up.
+                if (G.currDir != PLAYER_DIR_DOWN) {
+                    G.currDir = PLAYER_DIR_UP;
+                }
+                else {
+                    TraceLog(LOG_INFO, "Can't go up while going down");
+                }
                 break;
             }
-            // ... ect ...
+            case GE_PLAYER_MOVE_DOWN: {
+                TraceLog(LOG_INFO, "Player move down event");
+                if (G.currDir != PLAYER_DIR_UP) {
+                    G.currDir = PLAYER_DIR_DOWN;
+                }
+                else {
+                    TraceLog(LOG_INFO, "Can't go down while going up");
+                }
+                break;
+            }
+            case GE_PLAYER_MOVE_LEFT: {
+                TraceLog(LOG_INFO, "Player move left event");
+                if (G.currDir != PLAYER_DIR_RIGHT) {
+                  G.currDir = PLAYER_DIR_LEFT;
+                } else {
+                    TraceLog(LOG_INFO, "Can't go left while going right");
+                }
+                break;
+            }
+            case GE_PLAYER_MOVE_RIGHT: {
+                TraceLog(LOG_INFO, "Player move right event");
+                if (G.currDir != PLAYER_DIR_LEFT) {
+                    G.currDir = PLAYER_DIR_RIGHT;
+                } else {
+                    TraceLog(LOG_INFO, "Can't go right while going left");
+                }
+                break;
+            }
             default: {
                 assert(0);
             }
         }
+        TraceLog(LOG_INFO, "Player Direction: %d", G.currDir);
     }
 }
 
 void updateGameObjects(void) {
-
+    // ok so we have the player direction
+    // but then we what?  when do we check for collisions?
 }
 
 void renderGameWorld(void) {
@@ -90,12 +140,28 @@ void prepareForNextFrame(void) {
 }
 
 void initializeGame(void) {
+
     // Setup input map
     inputMapLength = 0;
     inputMap[inputMapLength++] = (input_map_t) {
         .inputType = IM_KEYPRESS, 
         .eventType = GE_PLAYER_MOVE_UP,
         .data = KEY_UP,
+    };
+    inputMap[inputMapLength++] = (input_map_t) {
+        .inputType = IM_KEYPRESS, 
+        .eventType = GE_PLAYER_MOVE_DOWN,
+        .data = KEY_DOWN,
+    };
+    inputMap[inputMapLength++] = (input_map_t) {
+        .inputType = IM_KEYPRESS, 
+        .eventType = GE_PLAYER_MOVE_LEFT,
+        .data = KEY_LEFT,
+    };
+    inputMap[inputMapLength++] = (input_map_t) {
+        .inputType = IM_KEYPRESS, 
+        .eventType = GE_PLAYER_MOVE_RIGHT,
+        .data = KEY_RIGHT,
     };
 }
 

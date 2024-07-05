@@ -11,6 +11,15 @@ int main(int argc, char *argv[]) {
    * if *x>3 {                 ysW(        if ( x>3 ) {
    * my $str = *whee!;         vllllS'     my $str = 'whee!';
    *
+   * gS{
+   * if I have this code:
+   * if (x>3) *doThing();
+   * Then v$ selects the rest of the line
+   * then we can gS} to get
+   * if (x>3) {
+   *    doThing();
+   * }
+   *
    * ds = delete surrounding
    * cs = change surrounding
    * ys = add surrounding

@@ -40,8 +40,15 @@ typedef struct input_map_t {
     int data; 
 } input_map_t;
 
+typedef struct snake_t {
+    Vector2 position;
+    Vector2 direction;
+    Vector2 previousPosition;
+} snake_t;
+
 typedef struct game_state_t {
     player_direction_t currDir; 
+    snake_t snake;
 } game_state_t;
 game_state_t G = {0};
 
@@ -69,6 +76,10 @@ void createWindow(int width, int height, const char *title) {
 }
 
 void initializeGame(void) {
+
+    G.snake.position = (Vector2){10, 10};
+    G.snake.previousPosition = (Vector2){10, 10};
+    G.snake.direction = (Vector2){1, 0};
     // Setup input map
     inputMapLength = 0;
     inputMap[inputMapLength++] = (input_map_t) {
@@ -94,18 +105,37 @@ void initializeGame(void) {
 }
 
 void handleInput(void) {
-    if (IsKeyPressed(KEY_SPACE)) {
-        CloseWindow();
-    }
 }
 
 void updateGame(void) {
     // Update game objects
+    G.snake.previousPosition = G.snake.position;
+    G.snake.position.x += G.snake.direction.x;
+    G.snake.position.y += G.snake.direction.y;
+    if (G.snake.position.x < 0) {
+        G.snake.direction.x = G.snake.direction.x * -1;
+    }
+    if (G.snake.position.y < 0) {
+        G.snake.direction.y = G.snake.direction.y * -1;
+    }
+    if (G.snake.position.x >= (int)(SCREEN_WIDTH / GRID_SIZE)) {
+        G.snake.direction.x = G.snake.direction.x * -1;
+    }
+    if (G.snake.position.y >= (int)(SCREEN_HEIGHT / GRID_SIZE)) {
+        G.snake.direction.y = G.snake.direction.y * -1;
+    }
 }
 
 void renderGame(double alpha) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
+
+    Vector2 interpolatedPosition = {	
+        .x = G.snake.previousPosition.x * (1.0f - alpha) + G.snake.position.x * alpha,	
+        .y = G.snake.previousPosition.y * (1.0f - alpha) + G.snake.position.y * alpha	
+    };
+    // Draw snake
+    DrawRectangle(interpolatedPosition.x * GRID_SIZE, interpolatedPosition.y * GRID_SIZE, GRID_SIZE, GRID_SIZE, DARKGREEN);
 
     EndDrawing();
 }

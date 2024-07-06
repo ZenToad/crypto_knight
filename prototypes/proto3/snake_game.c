@@ -7,6 +7,7 @@
  */
 
 #include "raylib.h"
+#include <assert.h>
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
@@ -19,18 +20,12 @@ typedef enum input_map_type_t {
     IM_EVENT_COUNT,
 } input_map_type_t;
 
-typedef enum player_direction_t {
-    PLAYER_DIR_UP = 0,
-    PLAYER_DIR_DOWN,
-    PLAYER_DIR_RIGHT,
-    PLAYER_DIR_LEFT,
-} player_direction_t;
-
 typedef enum game_event_type_t {
     GE_PLAYER_MOVE_UP = 0,
     GE_PLAYER_MOVE_DOWN,
     GE_PLAYER_MOVE_LEFT,
     GE_PLAYER_MOVE_RIGHT,
+    GE_SPAWN_FOOD,
     GE_EVENT_COUNT,
 } game_event_type_t;
 
@@ -47,26 +42,14 @@ typedef struct snake_t {
 } snake_t;
 
 typedef struct game_state_t {
-    player_direction_t currDir; 
     snake_t snake;
+    input_map_t inputMap[INPUT_MAP_MAX];
+    int inputMapLength;
+    game_event_type_t eventList[EVENT_MAX];
+    int eventListLength;
 } game_state_t;
 game_state_t G = {0};
 
-input_map_t inputMap[INPUT_MAP_MAX];
-int inputMapLength = 0;
-game_event_type_t eventList[EVENT_MAX];
-int eventListLength = 0;
-
-void processInput(void) {
-    for (int i = 0; i < inputMapLength; ++i) {
-        input_map_t *im = &inputMap[i];
-        if (im->inputType == IM_KEYPRESS) {
-            if (IsKeyPressed(im->data)) {
-                eventList[eventListLength++] = (game_event_type_t){im->eventType};
-            }
-        }
-    }
-}
 
 void createWindow(int width, int height, const char *title) {
     InitWindow(width, height, title);
@@ -81,49 +64,107 @@ void initializeGame(void) {
     G.snake.previousPosition = (Vector2){10, 10};
     G.snake.direction = (Vector2){1, 0};
     // Setup input map
-    inputMapLength = 0;
-    inputMap[inputMapLength++] = (input_map_t) {
+    G.inputMapLength = 0;
+    G.inputMap[G.inputMapLength++] = (input_map_t) {
         .inputType = IM_KEYPRESS, 
         .eventType = GE_PLAYER_MOVE_UP,
         .data = KEY_UP,
     };
-    inputMap[inputMapLength++] = (input_map_t) {
+    G.inputMap[G.inputMapLength++] = (input_map_t) {
         .inputType = IM_KEYPRESS, 
         .eventType = GE_PLAYER_MOVE_DOWN,
         .data = KEY_DOWN,
     };
-    inputMap[inputMapLength++] = (input_map_t) {
+    G.inputMap[G.inputMapLength++] = (input_map_t) {
         .inputType = IM_KEYPRESS, 
         .eventType = GE_PLAYER_MOVE_LEFT,
         .data = KEY_LEFT,
     };
-    inputMap[inputMapLength++] = (input_map_t) {
+    G.inputMap[G.inputMapLength++] = (input_map_t) {
         .inputType = IM_KEYPRESS, 
         .eventType = GE_PLAYER_MOVE_RIGHT,
         .data = KEY_RIGHT,
     };
+    G.inputMap[G.inputMapLength++] = (input_map_t) {
+        .inputType = IM_KEYPRESS, 
+        .eventType = GE_SPAWN_FOOD,
+        .data = KEY_SPACE,
+    };
 }
 
-void handleInput(void) {
+// Just cut/paste this from snake2, gotta work it in
+void spawnFood(void) {
+    // assert(!"TODO");
+    int len = 0;
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            if (game_state.grid[row][col] == 0) {
+                game_state.searchGrid[len] = (Vector2){col, row};
+                len++;
+            }
+        }
+    }
+    int idx = GetRandomValue(0, len - 1);
+    game_state.grid[(int)game_state.searchGrid[idx].y][(int)game_state.searchGrid[idx].x] = SNAKE_FOOD;
+}
+
+void processInput(void) {
+    for (int i = 0; i < G.inputMapLength; ++i) {
+        input_map_t *im = &G.inputMap[i];
+        if (im->inputType == IM_KEYPRESS) {
+            if (IsKeyPressed(im->data)) {
+                G.eventList[G.eventListLength++] = (game_event_type_t){im->eventType};
+            }
+        }
+    }
 }
 
 void updateGame(void) {
+
+    // events
+    for (int i = 0; i < G.eventListLength; ++i) {
+        game_event_type_t ge = G.eventList[i];
+        switch (ge) {
+            case GE_PLAYER_MOVE_UP: {
+                if (G.snake.direction.y == 0) {
+                    G.snake.direction = (Vector2){0, -1};
+                }
+                break;
+            }
+            case GE_PLAYER_MOVE_DOWN: {
+                if (G.snake.direction.y == 0) {
+                    G.snake.direction = (Vector2){0, 1};
+                }
+                break;
+            }
+            case GE_PLAYER_MOVE_LEFT: {
+                if (G.snake.direction.x == 0) {
+                    G.snake.direction = (Vector2){-1, 0};
+                }
+                break;
+            }
+            case GE_PLAYER_MOVE_RIGHT: {
+                if (G.snake.direction.x == 0) {
+                    G.snake.direction = (Vector2){1, 0};
+                }
+                break;
+            }
+            case GE_SPAWN_FOOD: {
+                spawnFood();
+                break;
+            }
+                       
+            default: {
+                assert(0);
+            }
+        }
+    }
+
     // Update game objects
     G.snake.previousPosition = G.snake.position;
     G.snake.position.x += G.snake.direction.x;
     G.snake.position.y += G.snake.direction.y;
-    if (G.snake.position.x < 0) {
-        G.snake.direction.x = G.snake.direction.x * -1;
-    }
-    if (G.snake.position.y < 0) {
-        G.snake.direction.y = G.snake.direction.y * -1;
-    }
-    if (G.snake.position.x >= (int)(SCREEN_WIDTH / GRID_SIZE)) {
-        G.snake.direction.x = G.snake.direction.x * -1;
-    }
-    if (G.snake.position.y >= (int)(SCREEN_HEIGHT / GRID_SIZE)) {
-        G.snake.direction.y = G.snake.direction.y * -1;
-    }
+
 }
 
 void renderGame(double alpha) {
@@ -158,7 +199,7 @@ int main(int argc, char **argv) {
         previousTime = currentTime;	
         lag += elapsed;
 
-        handleInput();
+        processInput();
 
         while (lag >= moveInterval) {
             lag -= moveInterval;

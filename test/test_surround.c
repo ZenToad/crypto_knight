@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
    *    doThing();
    * }
    *
+   * Now, if I have an if with a single line...
    * ds = delete surrounding
    * cs = change surrounding
    * ys = add surrounding

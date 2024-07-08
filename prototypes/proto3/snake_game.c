@@ -27,7 +27,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-#include "style_dark.h"
+#include "style_terminal.h"
 
 #define CK_GUI_IMPLEMENTATION
 #include "ck_gui.h"
@@ -73,11 +73,16 @@ typedef struct snake_t {
 } snake_t;
 
 typedef struct game_state_t {
+    double previousTime;	
+    double currentTime;	
+    double elapsed;	
+    double lag;	
     snake_t snake;
     input_map_t inputMap[INPUT_MAP_MAX];
     int inputMapLength;
     game_event_type_t eventList[EVENT_MAX];
     int eventListLength;
+    float moveSpeed;
 } game_state_t;
 game_state_t G = {0};
 
@@ -92,6 +97,7 @@ void createWindow(int width, int height, const char *title) {
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
 
     InitAudioDevice();
+    GuiLoadStyleTerminal();
 }
 
 void initializeGame(void) {
@@ -99,6 +105,8 @@ void initializeGame(void) {
     G.snake.position = (Vector2){10, 10};
     G.snake.previousPosition = (Vector2){10, 10};
     G.snake.direction = (Vector2){1, 0};
+    G.moveSpeed = 1.0f;
+
     // Setup input map
     G.inputMapLength = 0;
     G.inputMap[G.inputMapLength++] = (input_map_t) {
@@ -128,13 +136,69 @@ void initializeGame(void) {
     };
 }
 
+void resetGame(void) {
+    G.snake.position = (Vector2){10, 10};
+    G.snake.previousPosition = (Vector2){10, 10};
+    G.snake.direction = (Vector2){1, 0};
+}
+
 void DrawContent(Vector2 position, Vector2 scroll) {
-    GuiCheckBox((Rectangle){ position.x + 20 + scroll.x, position.y + 50 + scroll.y, 20, 20 }, "Toggle Grid", &D.showGrid);
-    GuiButton((Rectangle) { position.x + 20 + scroll.x, position.y + 100 + scroll.y, 100, 25 }, "Button 2");
-    // GuiButton((Rectangle) { position.x + 20 + scroll.x, position.y + 150 + scroll.y, 100, 25 }, "Button 3");
-    // GuiLabel((Rectangle) { position.x + 20 + scroll.x, position.y + 200 + scroll.y, 250, 25 }, "A Label");
-    // GuiLabel((Rectangle) { position.x + 20 + scroll.x, position.y + 250 + scroll.y, 250, 25 }, "Another Label");
-    // GuiLabel((Rectangle) { position.x + 20 + scroll.x, position.y + 300 + scroll.y, 250, 25 }, "Yet Another Label");
+
+    int padding = 10;
+    Rectangle rect = {0};
+    rect.x = position.x + 20 + scroll.x;
+    rect.y = position.y + 32 + scroll.y;
+    rect.width = 150;
+    rect.height = 20;
+
+    if (GuiButton(rect, "Reset")) {
+        resetGame();
+    }
+    rect.y += rect.height + padding;
+
+    rect.width = 20;
+    rect.height = 20;
+    GuiCheckBox(rect, "Toggle Grid", &D.showGrid);
+    rect.y += rect.height + padding;
+
+    rect.width = 100; rect.height = 25;
+    GuiButton(rect, "Button 2");
+    rect.y += rect.height + padding;
+
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Window Pos: (%.0f, %.0f)", position.x, position.y));
+    rect.y += rect.height + padding;
+
+    // Slider to control the speed
+// int GuiSliderPro(Rectangle bounds, const char *textLeft, const char *textRight, float *value, float minValue, float maxValue, int sliderWidth)
+    rect.width = 100, rect.height = 20;
+    GuiSliderPro(rect, "", "", &G.moveSpeed, 0.1f, 1.0, 10);
+    rect.y += rect.height + padding;
+
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Lag: %.2f", G.lag));
+    rect.y += rect.height + padding;
+
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Elapsed: %.2f", G.elapsed));
+    rect.y += rect.height + padding;
+
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Move Speed: %.2f", G.moveSpeed));
+    rect.y += rect.height + padding;
+
+    // print out snake data
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Snake Pos: (%.0f, %.0f)", G.snake.position.x, G.snake.position.y));
+    rect.y += rect.height + padding;
+
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Snake Dir: (%.0f, %.0f)", G.snake.direction.x, G.snake.direction.y));
+    rect.y += rect.height + padding;
+
+    rect.width = 200, rect.height = 20;
+    GuiLabel(rect, TextFormat("Snake Prev Pos: (%.0f, %.0f)", G.snake.previousPosition.x, G.snake.previousPosition.y));
+    rect.y += rect.height + padding;
 
 }
 
@@ -222,7 +286,7 @@ void drawWindow(void) {
 
 void renderGame(double alpha) {
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
 
     Vector2 interpolatedPosition = {	
         .x = G.snake.previousPosition.x * (1.0f - alpha) + G.snake.position.x * alpha,	
@@ -235,7 +299,7 @@ void renderGame(double alpha) {
     if (D.showGrid) {
         for (int i = 0; i < SCREEN_WIDTH / GRID_SIZE; i++) {
             for (int j = 0; j < SCREEN_HEIGHT / GRID_SIZE; j++) {
-                DrawRectangleLines(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE, LIGHTGRAY);
+                DrawRectangleLines(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE, DARKGRAY);
             }
         }
     }
@@ -251,26 +315,26 @@ int main(int argc, char **argv) {
 
     initializeGame();
 
-    double previousTime = GetTime();	
-    double currentTime = previousTime;	
-    double lag = 0.0;	
-    const float moveInterval = 1.001f;
+    G.previousTime = GetTime();	
+    G.currentTime = G.previousTime;	
+    G.elapsed = G.currentTime - G.previousTime;	
+    G.lag = 0.0;	
 
     while (!WindowShouldClose()) {
 
-        double currentTime = GetTime();	
-        double elapsed = currentTime - previousTime;	
-        previousTime = currentTime;	
-        lag += elapsed;
+        G.currentTime = GetTime();	
+        G.elapsed = G.currentTime - G.previousTime;	
+        G.previousTime = G.currentTime;	
+        G.lag += G.elapsed;
 
         processInput();
 
-        while (lag >= moveInterval) {
-            lag -= moveInterval;
+        while (G.lag >= G.moveSpeed) {
+            G.lag -= G.moveSpeed;
             updateGame();
         }
 
-        renderGame(lag / moveInterval);
+        renderGame(G.lag / G.moveSpeed);
             
     }
     return 0;

@@ -8,6 +8,8 @@
 struct {
     Vector2 pos;
     Vector2 dir;
+    double time;
+    double dt;
 } simple_loop;
 
 struct {
@@ -26,6 +28,11 @@ struct {
 } grid_smooth_loop;
 
 void initGame() {
+    simple_loop.pos = (Vector2) {0, 1};
+    simple_loop.dir = (Vector2) {1, 0};
+    simple_loop.time = 0;
+    simple_loop.dt = 0;
+
     // TraceLog(LOG_INFO, "initializing game");
 }
 
@@ -41,25 +48,31 @@ void drawGrid() {
 }
 
 void simpleUpdateGame() {
-    static double time = 0;
-    double dt = GetFrameTime();
-    time += dt;
-    if (time > 0.2) {
-        time = 0;
+    simple_loop.dt = GetFrameTime();
+    simple_loop.time += simple_loop.dt;
+    if (simple_loop.time > 0.2) {
+        simple_loop.time -= 0.2;
+        simple_loop.pos.x += simple_loop.dir.x;
+        simple_loop.pos.y += simple_loop.dir.y;
+        if (simple_loop.pos.x <= 0) {
+            simple_loop.dir.x *= -1;
+            simple_loop.pos.x = 0;
+        } else if (simple_loop.pos.x >= GRID_SIZE - 1) {
+            simple_loop.dir.x *= -1;
+            simple_loop.pos.x = GRID_SIZE - 1;
+        }
     }
 }
 
 // draw the squares, but snap them to the grid
 void simpleRenderGame() {
     int square_size = SCREEN_WIDTH / GRID_SIZE;
-    // DrawRectangle(horizontal.x * square_size , horizontal.y * square_size, square_size, square_size, GREEN);
-    // TraceLog(LOG_INFO, "simple render");
+    DrawRectangle(simple_loop.pos.x * square_size , simple_loop.pos.y * square_size, square_size, square_size, GREEN);
 }
 
 void simpleGameLoop() {
     simpleUpdateGame();
     simpleRenderGame();
-    // TraceLog(LOG_INFO, "simple loop");
 }
 
 int main(void) {
@@ -71,8 +84,10 @@ int main(void) {
                                     
     InitAudioDevice();
 
-    while (!WindowShouldClose()) {   // Detect window close button or ESC key
+    initGame();
 
+    while (!WindowShouldClose()) {   // Detect window close button or ESC key
+        simpleGameLoop();
         BeginDrawing();
         ClearBackground(BLACK);
 

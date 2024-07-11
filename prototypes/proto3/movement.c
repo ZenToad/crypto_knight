@@ -1,6 +1,9 @@
 #include "raylib.h"
 
-#define GRID_SIZE 10
+#define RAYMATH_IMPLEMENTATION
+#include "raymath.h"
+
+#define GRID_SIZE 20
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
@@ -13,19 +16,14 @@ struct {
 } simple_loop;
 
 struct {
-    Vector2 pos;
+    Vector2 currPos;
+    Vector2 prevPos;
     Vector2 dir;
-} smooth_loop;
-
-struct {
-    Vector2 pos;
-    Vector2 dir;
-} grid_loop;
-
-struct {
-    Vector2 pos;
-    Vector2 dir;
-} grid_smooth_loop;
+    double t;
+    double dt;
+    double currentTime;
+    double accumulator;
+} continuous_loop;
 
 void initGame() {
     simple_loop.pos = (Vector2) {0, 1};
@@ -33,6 +31,13 @@ void initGame() {
     simple_loop.time = 0;
     simple_loop.dt = 0;
 
+    continuous_loop.currPos = (Vector2) {0, 3};
+    continuous_loop.prevPos = (Vector2) {0, 3};
+    continuous_loop.dir = (Vector2) {1, 0};
+    continuous_loop.t = 0;
+    continuous_loop.dt = 0.2;
+    continuous_loop.currentTime = GetTime();
+    continuous_loop.accumulator = 0;
     // TraceLog(LOG_INFO, "initializing game");
 }
 
@@ -70,9 +75,37 @@ void simpleRenderGame() {
     DrawRectangle(simple_loop.pos.x * square_size , simple_loop.pos.y * square_size, square_size, square_size, GREEN);
 }
 
-void simpleGameLoop() {
-    simpleUpdateGame();
-    simpleRenderGame();
+void continuousUpdateGame(void) {
+    double newTime = GetTime();
+    double frameTime = newTime - continuous_loop.currentTime;
+    if ( frameTime > 0.25 )
+        frameTime = 0.25;
+    continuous_loop.currentTime = newTime;
+    continuous_loop.accumulator += frameTime;
+
+    while (continuous_loop.accumulator >= continuous_loop.dt) {
+        continuous_loop.prevPos = continuous_loop.currPos;
+        continuous_loop.currPos.x += continuous_loop.dir.x;
+        continuous_loop.currPos.y += continuous_loop.dir.y;
+        continuous_loop.t += continuous_loop.dt;
+        continuous_loop.accumulator -= continuous_loop.dt;
+        if (continuous_loop.currPos.x <= 0) {
+            continuous_loop.dir.x *= -1;
+            continuous_loop.currPos.x = 0;
+        } else if (continuous_loop.currPos.x >= GRID_SIZE - 1) {
+            continuous_loop.dir.x *= -1;
+            continuous_loop.currPos.x = GRID_SIZE - 1;
+        }
+    }
+}
+
+void continuousRenderGame(void) {
+    DrawRectangle(continuous_loop.currPos.x * SCREEN_WIDTH / GRID_SIZE, continuous_loop.currPos.y * SCREEN_HEIGHT / GRID_SIZE, SCREEN_WIDTH / GRID_SIZE, SCREEN_HEIGHT / GRID_SIZE, BLUE);
+       
+    double alpha = continuous_loop.accumulator / continuous_loop.dt;
+    Vector2 pos = Vector2Lerp(continuous_loop.prevPos, continuous_loop.currPos, alpha);
+    int square_size = SCREEN_WIDTH / GRID_SIZE;
+    DrawRectangle(pos.x * square_size , pos.y * square_size, square_size, square_size, RED);
 }
 
 int main(void) {
@@ -87,9 +120,14 @@ int main(void) {
     initGame();
 
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
-        simpleGameLoop();
+                                     
+        simpleUpdateGame();
+        continuousUpdateGame();
+
         BeginDrawing();
         ClearBackground(BLACK);
+        simpleRenderGame();
+        continuousRenderGame();
 
         drawGrid();
         // draw FPS

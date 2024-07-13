@@ -31,8 +31,8 @@
 
 #define GRID_SIZE 8 
 
-#define SCREEN_WIDTH 2*800
-#define SCREEN_HEIGHT 2*800
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 800
 
 #define FIXED_TIMESTEP 1.0
 
@@ -45,6 +45,8 @@ struct {
 struct {
     Vector2 currPos;
     Vector2 prevPos;
+    Vector2 currGrid;
+    Vector2 prevGrid;
     Vector2 dir;
     double currentTime;
     double accumulator;
@@ -67,6 +69,8 @@ void initGame() {
 
     continuous_loop.currPos = (Vector2) {0, 3};
     continuous_loop.prevPos = (Vector2) {0, 3};
+    continuous_loop.currGrid = (Vector2) {0, 3};
+    continuous_loop.prevGrid = (Vector2) {0, 3};
     continuous_loop.dir = (Vector2) {1, 0};
     continuous_loop.currentTime = GetTime();
     continuous_loop.accumulator = 0;
@@ -129,6 +133,19 @@ void continuousUpdateGame(void) {
             continuous_loop.dir.x *= -1;
             continuous_loop.currPos.x = GRID_SIZE - 1;
         }
+
+        // update the grid position
+        continuous_loop.prevGrid = continuous_loop.currGrid;
+        continuous_loop.currGrid = (Vector2) {floor(continuous_loop.currPos.x), floor(continuous_loop.currPos.y)};
+        // see if the player has moved to a new grid square
+        if (!(continuous_loop.currGrid.x == continuous_loop.prevGrid.x && 
+              continuous_loop.currGrid.y == continuous_loop.prevGrid.y)) {
+            TraceLog(LOG_INFO, "Player has moved to a new grid square: %f, %f", 
+                continuous_loop.currGrid.x, continuous_loop.currGrid.y);
+            // this is where we would check for a movement event and set the direction.
+            // if there isn't already an input event it will have to wait until the next square
+        }
+            
     }
 }
 

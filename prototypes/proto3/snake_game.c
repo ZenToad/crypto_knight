@@ -27,6 +27,9 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
+#define RAYMATH_IMPLEMENTATION
+#include "raymath.h"
+
 #include "style_terminal.h"
 
 #define CK_GUI_IMPLEMENTATION
@@ -41,10 +44,10 @@ static Vector2 scroll;
 
 
 #define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+#define SCREEN_HEIGHT 800
 #define INPUT_MAP_MAX 100
 #define EVENT_MAX 100
-#define GRID_SIZE 20
+#define GRID_SIZE 8
 
 typedef enum input_map_type_t {
     IM_KEYPRESS = 0,
@@ -66,23 +69,31 @@ typedef struct input_map_t {
     int data; 
 } input_map_t;
 
+typedef struct game_loop_t {
+    float fixedTimeStep;
+    double previousTime;	
+    double currentTime;	
+    double accumulator;
+    double time;
+    double elapsed;
+    double lag;
+} game_loop_t;
+
 typedef struct snake_t {
     Vector2 position;
     Vector2 direction;
     Vector2 previousPosition;
+    Vector2 currGrid;
+    Vector2 prevGrid;
 } snake_t;
 
 typedef struct game_state_t {
-    double previousTime;	
-    double currentTime;	
-    double elapsed;	
-    double lag;	
     snake_t snake;
+    game_loop_t loop;
     input_map_t inputMap[INPUT_MAP_MAX];
     int inputMapLength;
     game_event_type_t eventList[EVENT_MAX];
     int eventListLength;
-    float moveSpeed;
 } game_state_t;
 game_state_t G = {0};
 
@@ -90,6 +101,17 @@ typedef struct debug_state_t {
     bool showGrid;
 } debug_state_t;
 debug_state_t D = {0};
+
+// draw the grid.  split this grid into
+// GRID_SIZE x GRID_SIZE squares
+void drawGrid() {
+    for (int i = 0; i < SCREEN_WIDTH; i += SCREEN_WIDTH / GRID_SIZE) {
+        DrawLine(i, 0, i, SCREEN_HEIGHT, GRAY);
+    }
+    for (int i = 0; i < SCREEN_HEIGHT; i += SCREEN_HEIGHT / GRID_SIZE) {
+        DrawLine(0, i, SCREEN_WIDTH, i, GRAY);
+    }
+}
 
 
 void createWindow(int width, int height, const char *title) {
@@ -102,10 +124,14 @@ void createWindow(int width, int height, const char *title) {
 
 void initializeGame(void) {
 
-    G.snake.position = (Vector2){10, 10};
-    G.snake.previousPosition = (Vector2){10, 10};
+    G.loop.fixedTimeStep = 1.0f;
+    G.snake.position = (Vector2){0, 1};
+    G.snake.previousPosition = (Vector2){0, 1};
+    G.snake.currGrid = (Vector2){0, 1};
+    G.snake.prevGrid = (Vector2){0, 1};
     G.snake.direction = (Vector2){1, 0};
-    G.moveSpeed = 1.0f;
+
+    D.showGrid = true;
 
     // Setup input map
     G.inputMapLength = 0;
@@ -137,8 +163,8 @@ void initializeGame(void) {
 }
 
 void resetGame(void) {
-    G.snake.position = (Vector2){10, 10};
-    G.snake.previousPosition = (Vector2){10, 10};
+    G.snake.position = (Vector2){0, 1};
+    G.snake.previousPosition = (Vector2){0, 1};
     G.snake.direction = (Vector2){1, 0};
 }
 
@@ -172,19 +198,15 @@ void DrawContent(Vector2 position, Vector2 scroll) {
     // Slider to control the speed
 // int GuiSliderPro(Rectangle bounds, const char *textLeft, const char *textRight, float *value, float minValue, float maxValue, int sliderWidth)
     rect.width = 100, rect.height = 20;
-    GuiSliderPro(rect, "", "", &G.moveSpeed, 0.1f, 1.0, 10);
+    GuiSliderPro(rect, "", "", &G.loop.fixedTimeStep, 0.1f, 1.0, 10);
     rect.y += rect.height + padding;
 
     rect.width = 200, rect.height = 20;
-    GuiLabel(rect, TextFormat("Lag: %.2f", G.lag));
+    GuiLabel(rect, TextFormat("Lag: %.2f", G.loop.lag));
     rect.y += rect.height + padding;
 
     rect.width = 200, rect.height = 20;
-    GuiLabel(rect, TextFormat("Elapsed: %.2f", G.elapsed));
-    rect.y += rect.height + padding;
-
-    rect.width = 200, rect.height = 20;
-    GuiLabel(rect, TextFormat("Move Speed: %.2f", G.moveSpeed));
+    GuiLabel(rect, TextFormat("Elapsed: %.2f", G.loop.elapsed));
     rect.y += rect.height + padding;
 
     // print out snake data
@@ -269,11 +291,48 @@ void updateGame(void) {
             }
         }
     }
+    // use the continuous movement code from movement.c
+    // process events after movement?  We could also
+    // delay a frame, not sure.  Guess just see what feels better.
+    double newTime = GetTime();
+    double frameTime = newTime - G.loop.currentTime;
+    if (frameTime > G.loop.fixedTimeStep) {
+        frameTime = G.loop.fixedTimeStep;
+    }
+    G.loop.currentTime = newTime;
+    G.loop.accumulator += frameTime;
 
-    // Update game objects
-    G.snake.previousPosition = G.snake.position;
-    G.snake.position.x += G.snake.direction.x;
-    G.snake.position.y += G.snake.direction.y;
+    while (G.loop.accumulator >= G.loop.fixedTimeStep) {
+        G.snake.previousPosition = G.snake.position;
+        G.snake.position.x += G.snake.direction.x;
+        G.snake.position.y += G.snake.direction.y;
+        G.loop.accumulator -= G.loop.fixedTimeStep;
+        if (G.snake.position.x <= 0) {
+            G.snake.direction.x *= -1;
+            G.snake.position.x = 0;
+        } else if (G.snake.position.x >= GRID_SIZE - 1) {
+            G.snake.direction.x *= -1;
+            G.snake.position.x = GRID_SIZE - 1;
+        }
+
+        // update the grid position
+        G.snake.prevGrid = G.snake.currGrid;
+        G.snake.currGrid = (Vector2) {floor(G.snake.position.x), floor(G.snake.position.y)};
+        // see if the player has moved to a new grid square
+        if (!(G.snake.currGrid.x == G.snake.prevGrid.x && 
+              G.snake.currGrid.y == G.snake.prevGrid.y)) {
+            TraceLog(LOG_INFO, "Player has moved to a new grid square: %f, %f", 
+                G.snake.currGrid.x, G.snake.currGrid.y);
+            // this is where we would check for a movement event and set the direction.
+            // if there isn't already an input event it will have to wait until the next square
+        }
+            
+    }
+
+    // // Update game objects
+    // G.snake.previousPosition = G.snake.position;
+    // G.snake.position.x += G.snake.direction.x;
+    // G.snake.position.y += G.snake.direction.y;
 }
 
 void drawWindow(void) {
@@ -288,20 +347,16 @@ void renderGame(double alpha) {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    Vector2 interpolatedPosition = {	
-        .x = G.snake.previousPosition.x * (1.0f - alpha) + G.snake.position.x * alpha,	
-        .y = G.snake.previousPosition.y * (1.0f - alpha) + G.snake.position.y * alpha	
-    };
-    // Draw snake
-    DrawRectangle(interpolatedPosition.x * GRID_SIZE, interpolatedPosition.y * GRID_SIZE, GRID_SIZE, GRID_SIZE, DARKGREEN);
+    DrawRectangle(G.snake.position.x * SCREEN_WIDTH / GRID_SIZE, G.snake.position.y * SCREEN_HEIGHT / GRID_SIZE, SCREEN_WIDTH / GRID_SIZE, SCREEN_HEIGHT / GRID_SIZE, BLUE);
+       
+    // double alpha = G.loop.accumulator / G.fixedTimeStep
+    Vector2 pos = Vector2Lerp(G.snake.previousPosition, G.snake.position, alpha);
+    int square_size = SCREEN_WIDTH / GRID_SIZE;
+    DrawRectangle(pos.x * square_size , pos.y * square_size, square_size, square_size, RED);
 
     // Draw grid
     if (D.showGrid) {
-        for (int i = 0; i < SCREEN_WIDTH / GRID_SIZE; i++) {
-            for (int j = 0; j < SCREEN_HEIGHT / GRID_SIZE; j++) {
-                DrawRectangleLines(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE, DARKGRAY);
-            }
-        }
+        drawGrid();
     }
 
     drawWindow();
@@ -315,26 +370,25 @@ int main(int argc, char **argv) {
 
     initializeGame();
 
-    G.previousTime = GetTime();	
-    G.currentTime = G.previousTime;	
-    G.elapsed = G.currentTime - G.previousTime;	
-    G.lag = 0.0;	
+    G.loop.previousTime = GetTime();	
+    G.loop.currentTime = G.loop.previousTime;	
+    G.loop.elapsed = G.loop.currentTime - G.loop.previousTime;	
+    G.loop.lag = 0.0;	
 
     while (!WindowShouldClose()) {
 
-        G.currentTime = GetTime();	
-        G.elapsed = G.currentTime - G.previousTime;	
-        G.previousTime = G.currentTime;	
-        G.lag += G.elapsed;
+        double newTime = GetTime();
+        double frameTime = newTime - G.loop.currentTime;
+        if (frameTime > G.loop.fixedTimeStep) {
+            frameTime = G.loop.fixedTimeStep;
+        }
+        G.loop.time = newTime;
 
         processInput();
 
-        while (G.lag >= G.moveSpeed) {
-            G.lag -= G.moveSpeed;
-            updateGame();
-        }
+        updateGame();
 
-        renderGame(G.lag / G.moveSpeed);
+        renderGame(G.loop.lag / G.loop.fixedTimeStep);
             
     }
     return 0;

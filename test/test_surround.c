@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
    * }
    *
    * Now, if I have an if with a single line...
+   * if (x>3) 
+   * doThing();
    * ds = delete surrounding
    * cs = change surrounding
    * ys = add surrounding
